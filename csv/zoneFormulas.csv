@@ -1,0 +1,26 @@
+Name,Points (Clockwise),Formula
+A1,1,"BX3, BY3"
+,2,"BX3, BY3-2*Lb"
+,3,"BX3-2*Lb, BY3-2*Lb"
+,4,"BX3-0.5*Lb, BY3"
+,,
+A2,1,"BX3-0.5*Lb, BY3"
+,2,"BX3-2*Lb, BY3-2*Lb"
+,3,"BX3-4*Lb, BY3-2*Lb"
+,4,"BX3-4*Lb, BY3"
+,,
+B,1,"BX3,BY3-2*Lb"
+,2,"BX3,BY3-4*Lb"
+,3,"BX3-2*Lb,BY3-4*Lb"
+,4,"BX3-2*Lb, BY3-2*Lb"
+,,
+C,1,"BX3-4*Lb,BY3"
+,2,"BX3-4*Lb,BY3-2*Lb"
+,3,"BX3-2*Lb, BY3-2*Lb"
+,4,"BX3-2*Lb, BY3-4*Lb"
+,5,"BX3, BY3-4*Lb"
+,6,"BX3, BY3-6*Lb"
+,7,"BX3-4*Lb, BY3-6*Lb"
+,8,"BX3-4*Lb, BY3-4*Lb"
+,9,"BX3-6*Lb, BY3-4*Lb"
+,10,"BX3-6*Lb, BY3"
