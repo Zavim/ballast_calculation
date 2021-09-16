@@ -53,8 +53,10 @@ class Polygons():
         # if show:
         #     plt.show()
         fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
-        ax.set_xlim(0, 20)
-        ax.set_ylim(0, 20)
+        max_x = building[0].exterior.coords[1][0]
+        max_y = building[0].exterior.coords[1][1]
+        ax.set_xlim(0, max_x)
+        ax.set_ylim(0, max_y)
         # col = _plot_polygon_collection(ax, p.geometry)
         # col.set_array(np.array([0, 1, 0]))
         # triangle = polygon_list[0]
