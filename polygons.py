@@ -155,18 +155,20 @@ class Polygons():
                             6: [BX1+7*Lb, BY1+2*Lb],
                             7: [BX1+2*Lb, BY1+2*Lb],
                             8: [BX1+2*Lb, BY1+3*Lb]}}
-        zones = []
-        for values in formulas.values():
-            zones.append(values)
-        zone_polygons = []
-        iter_row = []
-        for zone in zones:
-            values = zone.values()
-            for i in iter(values):
-                iter_row.append(i)
-            zone_polygons.append(iter_row)
-            iter_row = []
-        zones = Polygons.build_polygons(zone_polygons)
+        zones = {}
+        coordinates = []
+        for key in formulas:
+            zones[key] = list(iter(formulas[key].values()))
+            coordinates.append(zones[key])
+            zones[key] = Polygons.build_polygons(coordinates)
+            coordinates = []
+            # must use iter() since the
+            # values in formulas are inside a nested dict
+            # that iter obj is converted to a list using list()
+            # for easy passing to build_polygons
+            # this lets us have a dict that perserves the key values
+            # so that each zone can have a label when graphed
+        # print(zones)
         return zones
 
     @staticmethod
@@ -183,12 +185,16 @@ class Polygons():
         ax.set_xlim(0, max_x)
         ax.set_ylim(0, max_y)
 
-        if building:
-            for polygon in building:
-                ax.add_artist(PolygonPatch(polygon, alpha=.25))
+        # if building:
+        #     for polygon in building:
+        #         ax.add_artist(PolygonPatch(polygon, alpha=.25))
         if zones:
-            for polygon in zones:
-                ax.add_artist(PolygonPatch(polygon, alpha=.5))
+            for zone in zones:
+                for polygon in iter(zones[zone]):
+                    ax.add_artist(PolygonPatch(
+                        polygon, facecolor='green', alpha=.5))
+                    ax.text(polygon.centroid.x, polygon.centroid.y, zone)
+                    # centroid represents the center of the polygon
         if array:
             for polygon in array:
                 ax.add_artist(PolygonPatch(polygon, alpha=.75))
@@ -203,7 +209,7 @@ class Polygons():
                 if intersects:
                     intersection = (panel.intersection(zone))
                     if intersection.area > 0.0:
-                        print(intersection.area, zone)
+                        print(intersection.area, panel, zone)
         # for i in range(len(series)):
         #     for j in range(1, len(series)):
         #         if not j == i:
@@ -223,13 +229,13 @@ class Polygons():
 
 def main():
     building_coordinates = Polygons.parse_csv(building_filepath)
-    array_coordinates = Polygons.parse_csv(array_filepath)
+    # array_coordinates = Polygons.parse_csv(array_filepath)
     building = Polygons.build_polygons(building_coordinates)
-    array = Polygons.build_polygons(array_coordinates)
+    # array = Polygons.build_polygons(array_coordinates)
     zones = Polygons.calculate_zones(building)
     # print(zones)
-    graph = Polygons.graph_polygons(building, zones, array, show=True)
-    intersection = Polygons.calculate_intersection(array, zones)
+    graph = Polygons.graph_polygons(building, zones, show=True)
+    # intersection = Polygons.calculate_intersection(array, zones)
     # print(formulas)
 
 
