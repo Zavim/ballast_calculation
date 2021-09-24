@@ -14,8 +14,6 @@ zone_formulas_filepath = 'csv/zoneFormulas.csv'
 building_filepath = 'csv/bigBuilding.csv'
 array_filepath = 'csv/array.csv'
 # building_filepath = 'csv/building.csv'
-# coordinates_filepath = 'csv/coordinates.csv'
-# coordinates_filepath = 'csv/intersection.csv'
 
 
 class Polygons():
@@ -28,6 +26,7 @@ class Polygons():
             coordinates = []
             try:
                 for row in csv_file:
+                    # is coord_row unecessary? methinks yes
                     coord_row.append(float(row['x']))
                     coord_row.append(float(row['y']))
                     coord_pair.append(coord_row)
@@ -168,7 +167,6 @@ class Polygons():
             # for easy passing to build_polygons
             # this lets us have a dict that perserves the key values
             # so that each zone can have a label when graphed
-        # print(zones)
         return zones
 
     @staticmethod
@@ -185,12 +183,13 @@ class Polygons():
         ax.set_xlim(0, max_x)
         ax.set_ylim(0, max_y)
 
-        # if building:
-        #     for polygon in building:
-        #         ax.add_artist(PolygonPatch(polygon, alpha=.25))
+        if building:
+            for polygon in building:
+                ax.add_artist(PolygonPatch(polygon, alpha=.25))
         if zones:
             for zone in zones:
                 for polygon in iter(zones[zone]):
+                    # make another dict for colors
                     ax.add_artist(PolygonPatch(
                         polygon, facecolor='green', alpha=.5))
                     ax.text(polygon.centroid.x, polygon.centroid.y, zone)
@@ -205,37 +204,22 @@ class Polygons():
     def calculate_intersection(array, zones):
         for panel in iter(array):
             for zone in iter(zones):
-                intersects = panel.intersects(zone)
+                intersects = panel.intersects(zones[zone][0])
                 if intersects:
-                    intersection = (panel.intersection(zone))
+                    intersection = (panel.intersection(zones[zone][0]))
                     if intersection.area > 0.0:
-                        print(intersection.area, panel, zone)
-        # for i in range(len(series)):
-        #     for j in range(1, len(series)):
-        #         if not j == i:
-        #             intersects = (series[i].intersects(series[j]))
-        #             if intersects:
-        #                 intersection = (series[i].intersection(series[j]))
-        #                 if intersection.area > 0.0:
-        #                     print(intersection.area)
-        # intersects = (*array.intersects(*zones))
-        # if intersects:
-        #     intersection = (array.intersection(zones))
-        #     if intersection.area > 0.0:
-        #         print(intersection.area)
-        # print(*array)
-        # print(*zones)
+                        print(zone, intersection.area, 'ft')
 
 
 def main():
     building_coordinates = Polygons.parse_csv(building_filepath)
-    # array_coordinates = Polygons.parse_csv(array_filepath)
+    array_coordinates = Polygons.parse_csv(array_filepath)
     building = Polygons.build_polygons(building_coordinates)
-    # array = Polygons.build_polygons(array_coordinates)
+    array = Polygons.build_polygons(array_coordinates)
     zones = Polygons.calculate_zones(building)
     # print(zones)
-    graph = Polygons.graph_polygons(building, zones, show=True)
-    # intersection = Polygons.calculate_intersection(array, zones)
+    graph = Polygons.graph_polygons(building, zones, array, show=True)
+    intersection = Polygons.calculate_intersection(array, zones)
     # print(formulas)
 
 
