@@ -1,17 +1,15 @@
 import csv
 import sys
-import ast
 import matplotlib.pyplot as plt
 import numpy as np
 import geopandas as gpd
 
-from shapely.geometry import Polygon, LineString, MultiPolygon
+from shapely.geometry import Polygon, LineString
 from descartes import PolygonPatch
 
 zones_filepath = 'csv/zones.csv'
 zone_formulas_filepath = 'csv/zoneFormulas.csv'
 building_filepath = 'csv/bigBuilding.csv'
-array_filepath = 'csv/array.csv'
 # building_filepath = 'csv/building.csv'
 
 
@@ -35,11 +33,6 @@ class Polygons():
 
     @staticmethod
     def build_polygons(coordinates):
-        # polygon_list = []
-        # for shape in coordinates:
-        #     polygon = Polygon(shape)
-        #     polygon_list.append(polygon)
-
         polygon = Polygon(coordinates)
         return polygon
 
@@ -151,12 +144,9 @@ class Polygons():
                             7: [BX1+2*Lb, BY1+2*Lb],
                             8: [BX1+2*Lb, BY1+3*Lb]}}
         zones = {}
-        coordinates = []
         for key in formulas:
             zones[key] = list(iter(formulas[key].values()))
-            coordinates.append(zones[key])
-            zones[key] = Polygons.build_polygons(coordinates)
-            coordinates = []
+            zones[key] = Polygons.build_polygons(zones[key])
             # must use iter() since the
             # values in formulas are inside a nested dict
             # that iter obj is converted to a list using list()
@@ -183,7 +173,7 @@ class Polygons():
         return array
 
     @staticmethod
-    def graph_polygons(building=None, zones=None, array=False, show=True):
+    def graph_polygons(building=None, zones=None, array=False, intersection=False, show=True):
         colors = {'3A1': '',
                   '3A2': '',
                   '3B': '',
@@ -213,17 +203,18 @@ class Polygons():
             ax.add_artist(PolygonPatch(building, alpha=.25))
         if zones:
             for zone in zones:
-                for polygon in iter(zones[zone]):
-                    # make another dict for colors
-                    ax.add_artist(PolygonPatch(
-                        polygon, facecolor='green', alpha=.5))
-                    ax.text(polygon.centroid.x, polygon.centroid.y, zone)
-                    # centroid represents the center of the polygon
+                # make another dict for colors
+                ax.add_artist(PolygonPatch(
+                    zones[zone], facecolor='green', alpha=.5))
+                ax.text(zones[zone].centroid.x, zones[zone].centroid.y, zone)
+                # centroid represents the center of the polygon
         if array:
             array = Polygons.build_array(4, 2, 1, 4, 4, 10, 400, max_x, max_y)
             for polygon in array:
-                # pass
                 ax.add_artist(PolygonPatch(polygon, alpha=.75))
+        if intersection:
+            Polygons.calculate_intersection(array, zones)
+            # return intersection
         if show:
             plt.show()
 
@@ -231,24 +222,19 @@ class Polygons():
     def calculate_intersection(array, zones):
         for panel in iter(array):
             for zone in iter(zones):
-                intersects = panel.intersects(zones[zone][0])
+                intersects = panel.intersects(zones[zone])
                 if intersects:
-                    intersection = (panel.intersection(zones[zone][0]))
+                    intersection = (panel.intersection(zones[zone]))
                     if intersection.area > 0.0:
-                        print(zone, intersection.area, 'sq. ft.')
+                        print(zone, intersection.area, 'sqft.')
 
 
 def main():
     building_coordinates = Polygons.parse_csv(building_filepath)
-    # array_coordinates = Polygons.parse_csv(array_filepath)
     building = Polygons.build_polygons(building_coordinates)
-    # array = Polygons.build_polygons(array_coordinates)
-    # zones = Polygons.calculate_zones(building)
-    # print(zones)
-    graph = Polygons.graph_polygons(building=building, array=True, show=True)
-    # graph = Polygons.graph_polygons(building, zones, array, show=True)
-    # intersection = Polygons.calculate_intersection(array, zones)
-    # print(formulas)
+    zones = Polygons.calculate_zones(building)
+    graph = Polygons.graph_polygons(
+        building=building, zones=zones, array=True, intersection=True, show=True)
 
 
 if __name__ == '__main__':
