@@ -1,12 +1,11 @@
 import csv
 import sys
 import ast
-from geopandas.plotting import _plot_polygon_collection
 import matplotlib.pyplot as plt
 import numpy as np
 import geopandas as gpd
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString, MultiPolygon
 from descartes import PolygonPatch
 
 zones_filepath = 'csv/zones.csv'
@@ -21,18 +20,13 @@ class Polygons():
     def parse_csv(filepath):
         with open(filepath, 'r') as readFile:
             csv_file = csv.DictReader(readFile)
-            coord_pair = []
             coord_row = []
             coordinates = []
             try:
                 for row in csv_file:
-                    # is coord_row unecessary? methinks yes
                     coord_row.append(float(row['x']))
                     coord_row.append(float(row['y']))
-                    coord_pair.append(coord_row)
-                    if row['id']:
-                        coordinates.append(coord_pair)
-                        coord_pair = []
+                    coordinates.append(coord_row)
                     coord_row = []
             except csv.Error as e:
                 sys.exit('file {}, line {}: {}'.format(
@@ -41,22 +35,24 @@ class Polygons():
 
     @staticmethod
     def build_polygons(coordinates):
-        polygon_list = []
-        for shape in coordinates:
-            polygon = Polygon(shape)
-            polygon_list.append(polygon)
-        return polygon_list
+        # polygon_list = []
+        # for shape in coordinates:
+        #     polygon = Polygon(shape)
+        #     polygon_list.append(polygon)
+
+        polygon = Polygon(coordinates)
+        return polygon
 
     @staticmethod
     def calculate_zones(building):
-        BX1 = building[0].exterior.coords[3][0]
-        BY1 = building[0].exterior.coords[3][1]
-        BX2 = building[0].exterior.coords[0][0]
-        BY2 = building[0].exterior.coords[0][1]
-        BX3 = building[0].exterior.coords[1][0]
-        BY3 = building[0].exterior.coords[1][1]
-        BX4 = building[0].exterior.coords[2][0]
-        BY4 = building[0].exterior.coords[2][1]
+        BX1 = building.exterior.coords[3][0]
+        BY1 = building.exterior.coords[3][1]
+        BX2 = building.exterior.coords[0][0]
+        BY2 = building.exterior.coords[0][1]
+        BX3 = building.exterior.coords[1][0]
+        BY3 = building.exterior.coords[1][1]
+        BX4 = building.exterior.coords[2][0]
+        BY4 = building.exterior.coords[2][1]
         Lb = 15
         formulas = {'3A1': {1: [BX3, BY3],
                             2: [BX3, BY3-2*Lb],
@@ -170,22 +166,51 @@ class Polygons():
         return zones
 
     @staticmethod
-    def graph_polygons(building=None, zones=None, array=None, show=True):
-        # p = gpd.GeoSeries(polygon_list)
-        # fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
-        # col = _plot_polygon_collection(ax, p.geometry)
-        # col.set_array(np.array([0, 1, 0]))
-        # if show:
-        #     plt.show()
+    def build_array(module_width, module_length, gap_length, rows, columns, distance_left, distance_bottom, max_x, max_y):
+        margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
+        margin_bottom = LineString(
+            [[0, distance_bottom], [max_x, distance_bottom]])
+        array_origin = margin_left.intersection(margin_bottom)
+        array = []
+        for row in range(rows):
+            gap = gap_length if row >= 1 else 0
+            for column in range(columns):
+                panel = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
+                         [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
+                array.append(panel)
+        for i in range(len(array)):
+            array[i] = Polygon(array[i])
+        return array
+
+    @staticmethod
+    def graph_polygons(building=None, zones=None, array=False, show=True):
+        colors = {'3A1': '',
+                  '3A2': '',
+                  '3B': '',
+                  '3C': '',
+                  '4E': '',
+                  '4F1': '',
+                  '4F2': '',
+                  '4G1': '',
+                  '4G2': '',
+                  '2A1': '',
+                  '2A2': '',
+                  '2B': '',
+                  '2C': '',
+                  '1E': '',
+                  '1F1': '',
+                  '1F2': '',
+                  '1G1': '',
+                  '1G2': ''
+                  }
         fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
-        max_x = building[0].exterior.coords[1][0]
-        max_y = building[0].exterior.coords[1][1]
+        max_x = building.exterior.coords[1][0]
+        max_y = building.exterior.coords[1][1]
         ax.set_xlim(0, max_x)
         ax.set_ylim(0, max_y)
 
         if building:
-            for polygon in building:
-                ax.add_artist(PolygonPatch(polygon, alpha=.25))
+            ax.add_artist(PolygonPatch(building, alpha=.25))
         if zones:
             for zone in zones:
                 for polygon in iter(zones[zone]):
@@ -195,7 +220,9 @@ class Polygons():
                     ax.text(polygon.centroid.x, polygon.centroid.y, zone)
                     # centroid represents the center of the polygon
         if array:
+            array = Polygons.build_array(4, 2, 1, 4, 4, 10, 400, max_x, max_y)
             for polygon in array:
+                # pass
                 ax.add_artist(PolygonPatch(polygon, alpha=.75))
         if show:
             plt.show()
@@ -208,18 +235,19 @@ class Polygons():
                 if intersects:
                     intersection = (panel.intersection(zones[zone][0]))
                     if intersection.area > 0.0:
-                        print(zone, intersection.area, 'ft')
+                        print(zone, intersection.area, 'sq. ft.')
 
 
 def main():
     building_coordinates = Polygons.parse_csv(building_filepath)
-    array_coordinates = Polygons.parse_csv(array_filepath)
+    # array_coordinates = Polygons.parse_csv(array_filepath)
     building = Polygons.build_polygons(building_coordinates)
-    array = Polygons.build_polygons(array_coordinates)
-    zones = Polygons.calculate_zones(building)
+    # array = Polygons.build_polygons(array_coordinates)
+    # zones = Polygons.calculate_zones(building)
     # print(zones)
-    graph = Polygons.graph_polygons(building, zones, array, show=True)
-    intersection = Polygons.calculate_intersection(array, zones)
+    graph = Polygons.graph_polygons(building=building, array=True, show=True)
+    # graph = Polygons.graph_polygons(building, zones, array, show=True)
+    # intersection = Polygons.calculate_intersection(array, zones)
     # print(formulas)
 
 
