@@ -37,16 +37,15 @@ class Polygons():
         return polygon
 
     @staticmethod
-    def calculate_zones(building):
-        BX1 = building.exterior.coords[3][0]
-        BY1 = building.exterior.coords[3][1]
-        BX2 = building.exterior.coords[0][0]
-        BY2 = building.exterior.coords[0][1]
-        BX3 = building.exterior.coords[1][0]
-        BY3 = building.exterior.coords[1][1]
-        BX4 = building.exterior.coords[2][0]
-        BY4 = building.exterior.coords[2][1]
-        Lb = 15
+    def calculate_zones(building, Lb=0):
+        BX1 = building.bounds[0]
+        BY1 = building.bounds[1]
+        BX2 = building.bounds[0]
+        BY2 = building.bounds[3]
+        BX3 = building.bounds[2]
+        BY3 = building.bounds[3]
+        BX4 = building.bounds[2]
+        BY4 = building.bounds[1]
         formulas = {'3A1': {1: [BX3, BY3],
                             2: [BX3, BY3-2*Lb],
                             3: [BX3-2*Lb, BY3-2*Lb],
@@ -161,80 +160,84 @@ class Polygons():
         margin_bottom = LineString(
             [[0, distance_bottom], [max_x, distance_bottom]])
         array_origin = margin_left.intersection(margin_bottom)
-        array = []
+        array = {}
         for row in range(rows):
             gap = gap_length if row >= 1 else 0
             for column in range(columns):
                 panel = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
                          [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
-                array.append(panel)
-        for i in range(len(array)):
-            array[i] = Polygon(array[i])
+                row_column = (str(row+1)+','+str(column+1))
+                # this key represents each panel's row,columm
+                array[row_column] = panel
+        for panel in array:
+            array[panel] = Polygon(array[panel])
         return array
 
     @staticmethod
-    def graph_polygons(building=None, zones=None, array=False, intersection=False, show=True):
-        colors = {'3A1': '',
-                  '3A2': '',
-                  '3B': '',
-                  '3C': '',
-                  '4E': '',
-                  '4F1': '',
-                  '4F2': '',
-                  '4G1': '',
-                  '4G2': '',
-                  '2A1': '',
-                  '2A2': '',
-                  '2B': '',
-                  '2C': '',
-                  '1E': '',
-                  '1F1': '',
-                  '1F2': '',
-                  '1G1': '',
-                  '1G2': ''
+    def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
+        colors = {'3A1': '#c00000',
+                  '3A2': '#ff00ff',
+                  '3B': '#ffc000',
+                  '3C': '#0070c0',
+                  '4E': '#00b050',
+                  '1E': '#00b050',
+                  '4F1': '#7030a0',
+                  '4F2': '#61bed4',
+                  '4G1': '#b3a2c7',
+                  '4G2': '#98b954',
+                  '2A1': '#c00000',
+                  '2A2': '#ff00ff',
+                  '2B': '#ffc000',
+                  '2C': '#0070c0',
+                  '1F1': '#7030a0',
+                  '1F2': '#61bed4',
+                  '1G1': '#b3a2c7',
+                  '1G2': '#98b954'
                   }
         fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
-        max_x = building.exterior.coords[1][0]
-        max_y = building.exterior.coords[1][1]
         ax.set_xlim(0, max_x)
         ax.set_ylim(0, max_y)
-
-        if building:
-            ax.add_artist(PolygonPatch(building, alpha=.25))
-        if zones:
-            for zone in zones:
-                # make another dict for colors
-                ax.add_artist(PolygonPatch(
-                    zones[zone], facecolor='green', alpha=.5))
-                ax.text(zones[zone].centroid.x, zones[zone].centroid.y, zone)
-                # centroid represents the center of the polygon
-        if array:
-            array = Polygons.build_array(4, 2, 1, 4, 4, 10, 400, max_x, max_y)
-            for polygon in array:
-                ax.add_artist(PolygonPatch(polygon, alpha=.75))
-        if intersection:
-            Polygons.calculate_intersection(array, zones)
-            # return intersection
         if show:
+            if building:
+                ax.add_artist(PolygonPatch(building, alpha=.25))
+            if zones:
+                for zone in zones:
+                    ax.add_artist(PolygonPatch(
+                        zones[zone], facecolor=colors[zone], alpha=.5))
+                    ax.text(zones[zone].centroid.x,
+                            zones[zone].centroid.y, zone)
+                    # centroid represents the center of the polygon
+            if array:
+                for panel in array:
+                    ax.add_artist(PolygonPatch(
+                        array[panel], facecolor='#000050', alpha=.75))
             plt.show()
 
     @staticmethod
     def calculate_intersection(array, zones):
-        for panel in iter(array):
+        intersections = {}
+        for panel in array:
             for zone in iter(zones):
-                intersects = panel.intersects(zones[zone])
+                intersects = array[panel].intersects(zones[zone])
                 if intersects:
-                    intersection = (panel.intersection(zones[zone]))
+                    intersection = (array[panel].intersection(zones[zone]))
                     if intersection.area > 0.0:
-                        print(zone, intersection.area, 'sqft.')
+                        intersections[panel] = intersection.area
+        return intersections
 
 
 def main():
     building_coordinates = Polygons.parse_csv(building_filepath)
     building = Polygons.build_polygons(building_coordinates)
-    zones = Polygons.calculate_zones(building)
-    graph = Polygons.graph_polygons(
-        building=building, zones=zones, array=True, intersection=True, show=True)
+    Lb = 15
+    max_x, max_y = building.bounds[2], building.bounds[3]
+    zones = Polygons.calculate_zones(building, Lb=Lb)
+    array = Polygons.build_array(4, 2, 1, 4, 4, 10, 400, max_x, max_y)
+    Polygons.graph_polygons(
+        building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=False)
+    intersections = Polygons.calculate_intersection(array, zones)
+    for intersection in intersections:
+        print(intersection, str(intersections[intersection]) + ' sqft.')
 
 
 if __name__ == '__main__':
