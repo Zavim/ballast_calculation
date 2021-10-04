@@ -14,22 +14,37 @@ building_filepath = 'csv/bigBuilding.csv'
 
 
 class Polygons():
+    # @staticmethod
+    # def parse_csv(filepath):
+    #     with open(filepath, 'r') as readFile:
+    #         csv_file = csv.DictReader(readFile)
+    #         coord_row = []
+    #         coordinates = []
+    #         try:
+    #             for row in csv_file:
+    #                 coord_row.append(float(row['x']))
+    #                 coord_row.append(float(row['y']))
+    #                 coordinates.append(coord_row)
+    #                 coord_row = []
+    #         except csv.Error as e:
+    #             sys.exit('file {}, line {}: {}'.format(
+    #                 filepath, csv_file.line_num, e))
+    #     return coordinates
+
     @staticmethod
-    def parse_csv(filepath):
-        with open(filepath, 'r') as readFile:
-            csv_file = csv.DictReader(readFile)
-            coord_row = []
-            coordinates = []
-            try:
-                for row in csv_file:
-                    coord_row.append(float(row['x']))
-                    coord_row.append(float(row['y']))
-                    coordinates.append(coord_row)
-                    coord_row = []
-            except csv.Error as e:
-                sys.exit('file {}, line {}: {}'.format(
-                    filepath, csv_file.line_num, e))
-        return coordinates
+    def calculate_building_coordinates(default=False):
+        if default:
+            coordinates = [[0.0, 0.0], [0.0, 500.0],
+                           [500.0, 500.0], [500.0, 0.0]]
+            Lb = 15
+            return coordinates, Lb
+
+        width = input('input width: ')
+        length = input('input length: ')
+        Lb = float(input('input height: '))
+        coordinates = [[0.0, 0.0], [0.0, float(length)], [float(
+            width), float(length)], [float(width), 0.0]]
+        return coordinates, Lb
 
     @staticmethod
     def build_polygons(coordinates):
@@ -58,16 +73,16 @@ class Polygons():
                            2: [BX3, BY3-4*Lb],
                            3: [BX3-2*Lb, BY3-4*Lb],
                            4: [BX3-2*Lb, BY3-2*Lb]},
-                    '3C': {1: [BX3-4*Lb, BY3],
-                           2: [BX3-4*Lb, BY3-2*Lb],
-                           3: [BX3-2*Lb, BY3-2*Lb],
-                           4: [BX3-2*Lb, BY3-4*Lb],
-                           5: [BX3, BY3-4*Lb],
-                           6: [BX3, BY3-6*Lb],
-                           7: [BX3-4*Lb, BY3-6*Lb],
-                           8: [BX3-4*Lb, BY3-4*Lb],
-                           9: [BX3-6*Lb, BY3-4*Lb],
-                           10: [BX3-6*Lb, BY3]},
+                    '3C': {1: [BX3-6*Lb, BY3],
+                           2: [BX3-4*Lb, BY3],
+                           3: [BX3-4*Lb, BY3-2*Lb],
+                           4: [BX3-2*Lb, BY3-2*Lb],
+                           5: [BX3-2*Lb, BY3-4*Lb],
+                           6: [BX3, BY3-4*Lb],
+                           7: [BX3, BY3-6*Lb],
+                           8: [BX3-4*Lb, BY3-6*Lb],
+                           9: [BX3-4*Lb, BY3-4*Lb],
+                           10: [BX3-6*Lb, BY3-4*Lb]},
                     '4E': {1: [BX4-5*Lb, BY4+2*Lb],
                            2: [BX4-5*Lb, BY4],
                            3: [BX1, BY1],
@@ -86,14 +101,14 @@ class Polygons():
                             2: [BX4, BY4+0.5*Lb],
                             3: [BX4-2*Lb, BY4+Lb],
                             4: [BX4-2*Lb, BY4+3*Lb]},
-                    '4G2': {1: [BX4, BY4+6*Lb],
-                            2: [BX4, BY4+3*Lb],
-                            3: [BX4-2*Lb, BY4+3*Lb],
-                            4: [BX4-2*Lb, BY4+2*Lb],
-                            5: [BX4-7*Lb, BY4+2*Lb],
-                            6: [BX4-7*Lb, BY4+4*Lb],
-                            7: [BX4-2*Lb, BY4+4*Lb],
-                            8: [BX4-2*Lb, BY4+6*Lb]},
+                    '4G2': {1: [BX4-2*Lb, BY4+6*Lb],
+                            2: [BX4, BY4+6*Lb],
+                            3: [BX4, BY4+3*Lb],
+                            4: [BX4-2*Lb, BY4+3*Lb],
+                            5: [BX4-2*Lb, BY4+2*Lb],
+                            6: [BX4-7*Lb, BY4+2*Lb],
+                            7: [BX4-7*Lb, BY4+4*Lb],
+                            8: [BX4-2*Lb, BY4+4*Lb]},
                     '2A1': {1: [BX2, BY2],
                             2: [BX2+0.5*Lb, BY2],
                             3: [BX2+2*Lb, BY2-2*Lb],
@@ -141,17 +156,40 @@ class Polygons():
                             5: [BX1+7*Lb, BY1+4*Lb],
                             6: [BX1+7*Lb, BY1+2*Lb],
                             7: [BX1+2*Lb, BY1+2*Lb],
-                            8: [BX1+2*Lb, BY1+3*Lb]}}
+                            8: [BX1+2*Lb, BY1+3*Lb]},
+                    'D': {1: [BX1, BY1+6*Lb],
+                          2: [BX2, BY2-6*Lb],
+                          3: [BX2+4*Lb, BY2-6*Lb],
+                          4: [BX2+4*Lb, BY2-4*Lb],
+                          5: [BX2+6*Lb, BY2-4*Lb],
+                          6: [BX2+6*Lb, BY2],
+                          7: [BX3-6*Lb, BY3],
+                          8: [BX3-6*Lb, BY3-4*Lb],
+                          9: [BX3-4*Lb, BY3-4*Lb],
+                          10: [BX3-4*Lb, BY3-6*Lb],
+                          11: [BX3, BY3-6*Lb],
+                          12: [BX3, BY3-4*Lb],
+                          13: [BX4, BY4+6*Lb],
+                          14: [BX4-2*Lb, BY4+6*Lb],
+                          15: [BX4-2*Lb, BY4+4*Lb],
+                          16: [BX4-7*Lb, BY4+4*Lb],
+                          17: [BX4-7*Lb, BY4+3*Lb],
+                          18: [BX1+7*Lb, BY1+3*Lb],
+                          19: [BX1+7*Lb, BY1+4*Lb],
+                          20: [BX1+2*Lb, BY1+4*Lb],
+                          21: [BX1+2*Lb, BY1+6*Lb]}
+                    }
         zones = {}
         for key in formulas:
             zones[key] = list(iter(formulas[key].values()))
             zones[key] = Polygons.build_polygons(zones[key])
-            # must use iter() since the
-            # values in formulas are inside a nested dict
-            # that iter obj is converted to a list using list()
-            # for easy passing to build_polygons
-            # this lets us have a dict that perserves the key values
-            # so that each zone can have a label when graphed
+        # print(list(zones['D'].exterior.coords))
+        # must use iter() since the
+        # values in formulas are inside a nested dict
+        # that iter obj is converted to a list using list()
+        # for easy passing to build_polygons
+        # this lets us have a dict that perserves the key values
+        # so that each zone can have a label when graphed
         return zones
 
     @staticmethod
@@ -176,11 +214,11 @@ class Polygons():
     @staticmethod
     def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
         colors = {'3A1': '#c00000',
+                  '1E': '#00b050',
                   '3A2': '#ff00ff',
                   '3B': '#ffc000',
                   '3C': '#0070c0',
                   '4E': '#00b050',
-                  '1E': '#00b050',
                   '4F1': '#7030a0',
                   '4F2': '#61bed4',
                   '4G1': '#b3a2c7',
@@ -192,7 +230,8 @@ class Polygons():
                   '1F1': '#7030a0',
                   '1F2': '#61bed4',
                   '1G1': '#b3a2c7',
-                  '1G2': '#98b954'
+                  '1G2': '#98b954',
+                  'D': '#ff0000'
                   }
         fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
         ax.set_xlim(0, max_x)
@@ -216,28 +255,43 @@ class Polygons():
     @staticmethod
     def calculate_intersection(array, zones):
         intersections = {}
-        for panel in array:
-            for zone in iter(zones):
+        zone_intersections = {}
+        # for panel in array:
+        #     for zone in iter(zones):
+        #         intersects = array[panel].intersects(zones[zone])
+        #         if intersects:
+        #             intersection = (array[panel].intersection(
+        #                 zones[zone].buffer(0)))
+        #             if intersection.area > 0.0:
+        #                 # print(zone)
+        #                 intersections[panel] = intersection.area
+        #                 zone_intersections[zone] = dict(intersections)
+        for zone in iter(zones):
+            for panel in array:
                 intersects = array[panel].intersects(zones[zone])
                 if intersects:
-                    intersection = (array[panel].intersection(zones[zone]))
+                    intersection = (array[panel].intersection(
+                        zones[zone].buffer(0)))
                     if intersection.area > 0.0:
                         intersections[panel] = intersection.area
-        return intersections
+                        zone_intersections[zone] = dict(intersections)
+        return zone_intersections
 
 
 def main():
-    building_coordinates = Polygons.parse_csv(building_filepath)
+    building_coordinates, Lb = Polygons.calculate_building_coordinates(True)
     building = Polygons.build_polygons(building_coordinates)
-    Lb = 15
     max_x, max_y = building.bounds[2], building.bounds[3]
     zones = Polygons.calculate_zones(building, Lb=Lb)
     array = Polygons.build_array(4, 2, 1, 4, 4, 10, 400, max_x, max_y)
     Polygons.graph_polygons(
         building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=False)
     intersections = Polygons.calculate_intersection(array, zones)
-    for intersection in intersections:
-        print(intersection, str(intersections[intersection]) + ' sqft.')
+    for zone in intersections:
+        # if intersections[zone]:
+        for panel in intersections[zone]:
+            print('panel:', panel, 'zone:', zone, 'area:', str(
+                intersections[zone][panel]) + ' sqft.')
 
 
 if __name__ == '__main__':
