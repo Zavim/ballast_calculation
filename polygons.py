@@ -210,14 +210,18 @@ class Polygons():
             array[panel] = Polygon(array[panel])
             panel_list.append(array[panel])
         panel_tree = STRtree(panel_list)
-        north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
+        Polygons.check_neighbors(
             array, panel_tree, module_width, module_length)
+        # --debugging--
+        # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
+        #     array, panel_tree, module_width, module_length)
         return array
 
     @staticmethod
     def check_neighbors(array, panel_tree, module_width, module_length):
-        neighbor_dist = .5
-        # 6 inches == half a ft
+        # neighbor_dist = .5
+        neighbor_dist = .5 + 11/12
+        # 6 inches == half a ft, 11/12 is the 11in gap length on Acme building
         for panel in array:
             north_ray = LineString([[array[panel].centroid.x, array[panel].centroid.y+(.5*module_length)+.05], [
                                    array[panel].centroid.x, array[panel].centroid.y+(.5*module_length)+neighbor_dist]])
@@ -243,14 +247,14 @@ class Polygons():
             neighbor_w = bool([panel.wkt for panel in panel_tree.query(
                 west_ray) if panel.intersects(west_ray)])
 
-            print(panel, 'N:', neighbor_n)
-            print(panel, 'E:', neighbor_e)
-            print(panel, 'S:', neighbor_s)
-            print(panel, 'W:', neighbor_w)
+            # print(panel, 'N:', neighbor_n)
+            # print(panel, 'E:', neighbor_e)
+            # print(panel, 'S:', neighbor_s)
+            # print(panel, 'W:', neighbor_w)
             panel_value, panel_class = Polygons.classify_panels(
                 neighbor_n, neighbor_e, neighbor_s, neighbor_w)
-            print(panel_value)
-            print(panel_class)
+            # print(panel_value)
+            print(panel, panel_class)
             print('--')
         return north_ray, south_ray, east_ray, west_ray
 
@@ -259,7 +263,7 @@ class Polygons():
         panel_value = bool(neighbor_w)*(2**0)+bool(neighbor_e) * \
             (2**1)+bool(neighbor_s)*(2**2)+bool(neighbor_n)*(2**3)
         panel_class = 'inside' if panel_value == 15 else 'edge'
-        if panel_value == 0 or 5 or 6 or 9 or 10:
+        if (panel_value == 0 or panel_value == 5 or panel_value == 6 or panel_value == 9 or panel_value == 10):
             panel_class = 'corner'
         return panel_value, panel_class
 
