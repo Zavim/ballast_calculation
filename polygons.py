@@ -11,6 +11,15 @@ building_filepath = 'csv/bigBuilding.csv'
 # building_filepath = 'csv/building.csv'
 
 
+class Panel:
+    def __init__(self,  width, length, polygon, row_column, panel_class=None):
+        self.width = width
+        self.length = length
+        self.polygon = polygon
+        self.row_column = row_column
+        self.panel_class = panel_class
+
+
 class Polygons():
     # @staticmethod
     # def parse_csv(filepath):
@@ -197,18 +206,19 @@ class Polygons():
             [[0, distance_bottom], [max_x, distance_bottom]])
         array_origin = margin_left.intersection(margin_bottom)
         panel_list = []
-        array = {}
+        array = []
         for row in range(rows):
             gap = gap_length if row >= 1 else 0
             for column in range(columns):
-                panel = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
-                         [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
+                panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
+                                     [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
                 row_column = (str(row+1)+','+str(column+1))
-                # this key represents each panel's row,column accounting for zero-indexing
-                array[row_column] = panel
+                # this variable represents each panel's row,column accounting for zero-indexing
+                panel = Panel(module_width, module_length,
+                              Polygon(panel_coordinates), row_column)
+                array.append(panel)
         for panel in array:
-            array[panel] = Polygon(array[panel])
-            panel_list.append(array[panel])
+            panel_list.append(panel.polygon)
         panel_tree = STRtree(panel_list)
         Polygons.check_neighbors(
             array, panel_tree, module_width, module_length)
@@ -223,17 +233,17 @@ class Polygons():
         neighbor_dist = .5 + 11/12
         # 6 inches == half a ft, 11/12 is the 11in gap length on Acme building
         for panel in array:
-            north_ray = LineString([[array[panel].centroid.x, array[panel].centroid.y+(.5*module_length)+.05], [
-                                   array[panel].centroid.x, array[panel].centroid.y+(.5*module_length)+neighbor_dist]])
+            north_ray = LineString([[panel.polygon.centroid.x, panel.polygon.centroid.y+(.5*module_length)+.05], [
+                                   panel.polygon.centroid.x, panel.polygon.centroid.y+(.5*module_length)+neighbor_dist]])
 
-            east_ray = LineString([[array[panel].centroid.x+(.5*module_width)+.05, array[panel].centroid.y], [
-                                  array[panel].centroid.x+(.5*module_width)+neighbor_dist, array[panel].centroid.y]])
+            east_ray = LineString([[panel.polygon.centroid.x+(.5*module_width)+.05, panel.polygon.centroid.y], [
+                                  panel.polygon.centroid.x+(.5*module_width)+neighbor_dist, panel.polygon.centroid.y]])
 
-            south_ray = LineString([[array[panel].centroid.x, array[panel].centroid.y-(.5*module_length)-.05], [
-                                   array[panel].centroid.x, array[panel].centroid.y-(.5*module_length)-neighbor_dist]])
+            south_ray = LineString([[panel.polygon.centroid.x, panel.polygon.centroid.y-(.5*module_length)-.05], [
+                                   panel.polygon.centroid.x, panel.polygon.centroid.y-(.5*module_length)-neighbor_dist]])
 
-            west_ray = LineString([[array[panel].centroid.x-(.5*module_width)-.05, array[panel].centroid.y], [
-                                  array[panel].centroid.x-(.5*module_width)-neighbor_dist, array[panel].centroid.y]])
+            west_ray = LineString([[panel.polygon.centroid.x-(.5*module_width)-.05, panel.polygon.centroid.y], [
+                                  panel.polygon.centroid.x-(.5*module_width)-neighbor_dist, panel.polygon.centroid.y]])
 
             neighbor_n = bool([panel.wkt for panel in panel_tree.query(
                 north_ray) if panel.intersects(north_ray)])
@@ -251,10 +261,10 @@ class Polygons():
             # print(panel, 'E:', neighbor_e)
             # print(panel, 'S:', neighbor_s)
             # print(panel, 'W:', neighbor_w)
-            panel_value, panel_class = Polygons.classify_panels(
+            panel.panel_class = Polygons.classify_panels(
                 neighbor_n, neighbor_e, neighbor_s, neighbor_w)
             # print(panel_value)
-            print(panel, panel_class)
+            print(panel.row_column, panel.panel_class)
             print('--')
         return north_ray, south_ray, east_ray, west_ray
 
@@ -265,7 +275,14 @@ class Polygons():
         panel_class = 'inside' if panel_value == 15 else 'edge'
         if (panel_value == 0 or panel_value == 5 or panel_value == 6 or panel_value == 9 or panel_value == 10):
             panel_class = 'corner'
-        return panel_value, panel_class
+        return panel_class
+
+    @staticmethod
+    def calculate_load_sharing(array):
+        lift_graph = {'An': {1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60, 7: 70, 8: 80, 9: 90, 10: 100, 11: 200, 12: 300, 13: 400, 14: 500, 15: 600, 16: 700, 17: 800, 19: 900, 20: 1000, 21: 2000},
+                      'A1': {1: -.72, 2: -.59, 3: -.51, 4: -.46, 5: -.42, 6: -.38, 7: -.35, 8: -.33, 9: -.3, 10: -.29, 11: -.19, 12: -.14, 13: -.12, 14: -.1, 15: -0.09, 16: -0.08, 17: -0.07, 19: -0.06, 20: -0.05, 21: -0.04},
+                      'A2': {1: -0.67, 2: -0.54, 3: -0.47, 4: -0.42, 5: -0.38, 6: -0.35, 7: -0.32, 8: -0.29, 9: -0.27, 10: -0.25, 11: -0.16, 12: -0.11, 13: -0.09, 14: -0.08, 15: -0.07, 16: -0.06, 17: -0.05, 19: -0.04, 20: -0.03, 21: -.02},
+                      'B': {1: -0.56, 2: -0.46, 3: -0.4, 4: -0.35, 5: -0.33, 6: -0.3, 7: -0.28, 8: -0.26, 9: -0.24, 10: -0.23, 11: -0.15, 12: -0.1, 13: -0.09, 14: -0.07, 15: -0.06, 16: -0.05, 17: -0.04, 19: -0.03, 20: -0.02, 21: -0.01}}
 
     @staticmethod
     def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
@@ -305,7 +322,7 @@ class Polygons():
             if array:
                 for panel in array:
                     ax.add_artist(PolygonPatch(
-                        array[panel], facecolor='#000050', alpha=.75))
+                        panel.polygon, facecolor='#000050', alpha=.75))
             plt.show()
         return ax
 
@@ -315,9 +332,9 @@ class Polygons():
         zone_intersections = {}
         for zone in iter(zones):
             for panel in array:
-                intersects = array[panel].intersects(zones[zone])
+                intersects = panel.polygon.intersects(zones[zone])
                 if intersects:
-                    intersection = (array[panel].intersection(
+                    intersection = (panel.polygon.intersection(
                         zones[zone].buffer(0)))
                     if intersection.area > 0.0:
                         intersections[panel] = intersection.area
@@ -332,8 +349,8 @@ def main():
     zones = Polygons.calculate_zones(building, Lb=Lb)
     array = Polygons.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
                                   columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    Polygons.graph_polygons(
-        building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=False)
+    # Polygons.graph_polygons(
+    #     building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=False)
     # intersections = Polygons.calculate_intersection(array, zones)
     # for zone in intersections:
     #     for panel in intersections[zone]:
@@ -354,7 +371,7 @@ def main():
     # ax.plot(x, y)
     # for panel in array:
     #     ax.add_artist(PolygonPatch(
-    #         array[panel], facecolor='#000050', alpha=.75))
+    #         panel.polygon, facecolor='#000050', alpha=.75))
 
     # plt.show()
 
