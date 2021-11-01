@@ -12,12 +12,13 @@ building_filepath = 'csv/bigBuilding.csv'
 
 
 class Panel:
-    def __init__(self,  width, length, polygon, row_column, panel_class=None):
+    def __init__(self,  width, length, polygon, row_column, An=0, panel_class=None):
         self.width = width
         self.length = length
         self.polygon = polygon
         self.row_column = row_column
         self.panel_class = panel_class
+        self.An = An
 
 
 # class Polygons():
@@ -40,10 +41,11 @@ class Panel:
 
 
 def calculate_building_coordinates(default=False):
+    global Lb
     if default:
         coordinates = [[0.0, 0.0], [0.0, 500.0],
                        [500.0, 500.0], [500.0, 0.0]]
-        Lb = 15
+        Lb = 15.0
         return coordinates, Lb
 
     width = input('input width: ')
@@ -264,8 +266,8 @@ def check_neighbors(array, panel_tree, module_width, module_length):
         panel.panel_class = classify_panels(
             neighbor_n, neighbor_e, neighbor_s, neighbor_w)
         # print(panel_value)
-        print(panel.row_column, panel.panel_class)
-        print('--')
+        # print(panel.row_column, panel.panel_class)
+        # print('--')
     return north_ray, south_ray, east_ray, west_ray
 
 
@@ -279,6 +281,8 @@ def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighb
 
 
 def calculate_load_sharing(array):
+    Atrib = 1
+    An = Atrib/(Lb**2*1000)
     lift_graph = {'An': {1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60, 7: 70, 8: 80, 9: 90, 10: 100, 11: 200, 12: 300, 13: 400, 14: 500, 15: 600, 16: 700, 17: 800, 18: 900, 19: 1000, 20: 2000},
                   'A1': {1: -.72, 2: -.59, 3: -.51, 4: -.46, 5: -.42, 6: -.38, 7: -.35, 8: -.33, 9: -.3, 10: -.29, 11: -.19, 12: -.14, 13: -.12, 14: -.1, 15: -0.09, 16: -0.08, 17: -0.07, 19: -0.06, 20: -0.05, 21: -0.04},
                   'A2': {1: -0.67, 2: -0.54, 3: -0.47, 4: -0.42, 5: -0.38, 6: -0.35, 7: -0.32, 8: -0.29, 9: -0.27, 10: -0.25, 11: -0.16, 12: -0.11, 13: -0.09, 14: -0.08, 15: -0.07, 16: -0.06, 17: -0.05, 18: -0.04, 19: -0.03, 20: -.02},
@@ -311,10 +315,14 @@ def calculate_load_sharing(array):
                  'F2': {1: -0.62, 2: -0.54, 3: -0.5, 4: -0.47, 5: -0.44, 6: -0.42, 7: -0.4, 8: -0.39, 9: -0.38, 10: -0.37, 11: -0.29, 12: -0.25, 13: -0.22, 14: -0.2, 15: -0.18, 16: -0.17, 17: -0.15, 18: -0.14, 19: -0.13, 20: -0.09},
                  'G1': {1: -0.73, 2: -0.65, 3: -0.6, 4: -0.56, 5: -0.54, 6: -0.51, 7: -0.49, 8: -0.48, 9: -0.46, 10: -0.45, 11: -0.37, 12: -0.32, 13: -0.28, 14: -0.25, 15: -0.23, 16: -0.21, 17: -0.19, 18: -0.18, 19: -0.16, 20: -0.1},
                  'G2': {1: -0.35, 2: -0.3, 3: -0.27, 4: -0.25, 5: -0.23, 6: -0.22, 7: -0.21, 8: -0.2, 9: -0.19, 10: -0.18, 11: -0.14, 12: -0.11, 13: -0.1, 14: -0.09, 15: -0.08, 16: -0.07, 17: -0.06, 18: -0.05, 19: -0.04, 20: -0.03}}
+
     D_graph = {'modules': {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 20, 12: 30, 13: 40, 14: 50, 15: 60, 16: 70, 17: 80, 18: 90, 19: 100},
                'lift': {1: -0.130, 2: -0.105, 3: -0.091, 4: -0.080, 5: -0.073, 6: -0.068, 7: -0.063, 8: -0.060, 9: -0.056, 10: -0.053, 11: -0.039, 12: -0.033, 13: -0.030, 14: -0.028, 15: -0.027, 16: -0.027, 17: -0.026, 18: -0.025, 19: -0.025},
                'mu8': {1: -0.180, 2: -0.145, 3: -0.125, 4: -0.110, 5: -0.102, 6: -0.095, 7: -0.089, 8: -0.084, 9: -0.080, 10: -0.077, 11: -0.060, 12: -0.052, 13: -0.047, 14: -0.044, 15: -0.041, 16: -0.041, 17: -0.041, 18: -0.041, 19: -0.040},
                'mu5': {1: -0.200, 2: -0.166, 3: -0.145, 4: -0.130, 5: -0.121, 6: -0.113, 7: -0.106, 8: -0.101, 9: -0.096, 10: -0.094, 11: -0.078, 12: -0.070, 13: -0.068, 14: -0.065, 15: -0.063, 16: -0.062, 17: -0.062, 18: -0.060, 19: -0.060}}
+    for panel in array:
+        panel.An = An
+        print(panel.row_column, panel.An)
 
 
 def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
@@ -381,8 +389,9 @@ def main():
     zones = calculate_zones(building, Lb=Lb)
     array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
                          columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    graph_polygons(
-        building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=True)
+    calculate_load_sharing(array)
+    # graph_polygons(
+    #     building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=True)
     # intersections = Polygons.calculate_intersection(array, zones)
     # for zone in intersections:
     #     for panel in intersections[zone]:
