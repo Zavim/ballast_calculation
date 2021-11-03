@@ -1,4 +1,5 @@
-# import csv
+import csv
+import sys
 import matplotlib.pyplot as plt
 
 from shapely.geometry import Polygon, LineString
@@ -8,6 +9,8 @@ from descartes import PolygonPatch
 zones_filepath = 'csv/zones.csv'
 zone_formulas_filepath = 'csv/zoneFormulas.csv'
 building_filepath = 'csv/bigBuilding.csv'
+alberta_filepath = 'csv/albertaGap.csv'
+acme_filepath = 'csv/acmeRoof.csv'
 # building_filepath = 'csv/building.csv'
 
 
@@ -23,21 +26,26 @@ class Panel:
 
 # class Polygons():
     #
-    # def parse_csv(filepath):
-    #     with open(filepath, 'r') as readFile:
-    #         csv_file = csv.DictReader(readFile)
-    #         coord_row = []
-    #         coordinates = []
-    #         try:
-    #             for row in csv_file:
-    #                 coord_row.append(float(row['x']))
-    #                 coord_row.append(float(row['y']))
-    #                 coordinates.append(coord_row)
-    #                 coord_row = []
-    #         except csv.Error as e:
-    #             sys.exit('file {}, line {}: {}'.format(
-    #                 filepath, csv_file.line_num, e))
-    #     return coordinates
+def parse_csv(filepath):
+    with open(filepath, 'r') as readFile:
+        fieldnames = ["x", "y", "pressure_for_lifting"]
+        csv_file = csv.DictReader(readFile, fieldnames)
+        # header = csv_file[0]
+        coord_row = []
+        coordinates = []
+        try:
+            for row in csv_file:
+                try:
+                    coord_row.append(float(row['x']))
+                    coord_row.append(float(row['y']))
+                    coordinates.append(coord_row)
+                    coord_row = []
+                except ValueError:
+                    return coordinates
+        except csv.Error as e:
+            sys.exit('file {}, line {}: {}'.format(
+                filepath, csv_file.line_num, e))
+    # return coordinates
 
 
 def calculate_building_coordinates(default=False):
@@ -383,6 +391,7 @@ def calculate_intersection(array, zones):
 
 
 def main():
+    coords = parse_csv(acme_filepath)
     building_coordinates, Lb = calculate_building_coordinates(True)
     building = build_polygons(building_coordinates)
     max_x, max_y = building.bounds[2], building.bounds[3]

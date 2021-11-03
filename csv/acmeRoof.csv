@@ -1,0 +1,49 @@
+19.22,66.54,13.32
+25.73,66.54,7.47
+32.24,66.54,7.09
+38.75,66.54,10.3
+19.22,62.33,9.33
+25.73,62.33,5.47
+32.24,62.33,5.82
+38.75,62.33,9.08
+19.22,58.11,8.39
+25.73,58.11,5.7
+32.24,58.11,6.66
+38.75,58.11,9.53
+19.22,53.91,9.16
+25.73,53.91,6.52
+32.24,53.91,8.09
+38.75,53.91,10.59
+
+name,Acme Rooftop [LIFT]
+width,49
+length,80
+product_id,352
+pressure_units,psf
+w_p,6.51
+l_p,3.28
+s_row,4.21
+nw height,15
+nw parapet,1.2
+nw major,true
+nw minor,true
+nw q_value,26.31
+ne height,15
+ne parapet,1.2
+ne major,true
+ne minor,true
+ne q_value,26.31
+sw height,15
+sw parapet,1.2
+sw major,true
+sw minor,true
+sw q_value,26.31
+se height,15
+se parapet,1.2
+se major,true
+se minor,true
+se q_value,26.31
+zone_de q_value_north,26.31
+zone_de q_value_east,26.31
+zone_de q_value_west,26.31
+zone_de q_value_south,26.31
