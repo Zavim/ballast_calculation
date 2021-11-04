@@ -41,11 +41,17 @@ def parse_csv(filepath):
                     coordinates.append(coord_row)
                     coord_row = []
                 except ValueError:
-                    return coordinates
+                    attributes_iterator = row['x']
+                    if row['x'] == 'width':
+                        width = row['y']
+                    if row['x'] == 'length':
+                        length = row['y']
+                    # return coordinates
+                    pass
         except csv.Error as e:
             sys.exit('file {}, line {}: {}'.format(
                 filepath, csv_file.line_num, e))
-    # return coordinates
+    return coordinates, width, length
 
 
 def calculate_building_coordinates(default=False):
@@ -215,6 +221,7 @@ def build_arrays(num_arrays=0, rows=0, columns=0, module_width=0, module_length=
     margin_bottom = LineString(
         [[0, distance_bottom], [max_x, distance_bottom]])
     array_origin = margin_left.intersection(margin_bottom)
+    # new array_origin == x,y from csv
     panel_list = []
     array = []
     for row in range(rows):
@@ -391,7 +398,7 @@ def calculate_intersection(array, zones):
 
 
 def main():
-    coords = parse_csv(acme_filepath)
+    coords, width, length = parse_csv(acme_filepath)
     building_coordinates, Lb = calculate_building_coordinates(True)
     building = build_polygons(building_coordinates)
     max_x, max_y = building.bounds[2], building.bounds[3]
