@@ -15,7 +15,7 @@ acme_filepath = 'csv/acmeRoof.csv'
 
 
 class Panel:
-    def __init__(self,  width, length, polygon, row_column, An=0, panel_class=None):
+    def __init__(self,  width, length, polygon, row_column=0, An=0, panel_class=None):
         self.width = width
         self.length = length
         self.polygon = polygon
@@ -24,8 +24,6 @@ class Panel:
         self.An = An
 
 
-# class Polygons():
-    #
 def parse_csv(filepath):
     with open(filepath, 'r') as readFile:
         fieldnames = ["x", "y", "pressure_for_lifting"]
@@ -41,33 +39,47 @@ def parse_csv(filepath):
                     coordinates.append(coord_row)
                     coord_row = []
                 except ValueError:
-                    attributes_iterator = row['x']
                     if row['x'] == 'width':
-                        width = row['y']
+                        building_width = float(row['y'])
                     if row['x'] == 'length':
-                        length = row['y']
-                    # return coordinates
+                        building_length = float(row['y'])
+                    if row['x'] == 'nw height':
+                        building_height = float(row['y'])
+                    if row['x'] == 'ne height':
+                        if building_height != float(row['y']):
+                            sys.exit('building is not flat')
+                    if row['x'] == 'sw height':
+                        if building_height != float(row['y']):
+                            sys.exit('building is not flat')
+                    if row['x'] == 'se height':
+                        if building_height != float(row['y']):
+                            sys.exit('building is not flat')
                     pass
         except csv.Error as e:
             sys.exit('file {}, line {}: {}'.format(
                 filepath, csv_file.line_num, e))
-    return coordinates, width, length
+    return coordinates, building_width, building_length, building_height
 
 
-def calculate_building_coordinates(default=False):
+def calculate_building_coordinates(preset='', building_width=0, building_length=0, building_height=0):
     global Lb
-    if default:
-        coordinates = [[0.0, 0.0], [0.0, 500.0],
-                       [500.0, 500.0], [500.0, 0.0]]
-        Lb = 15.0
-        return coordinates, Lb
+    if preset:
+        if preset == 'default':
+            coordinates = [[0.0, 0.0], [0.0, 500.0],
+                           [500.0, 500.0], [500.0, 0.0]]
+            Lb = 15.0
+            return coordinates
 
-    width = input('input width: ')
-    length = input('input length: ')
-    Lb = float(input('input height: '))
-    coordinates = [[0.0, 0.0], [0.0, float(length)], [float(
-        width), float(length)], [float(width), 0.0]]
-    return coordinates, Lb
+        if preset == 'alberta':
+            coordinates = [[0.0, 0.0], [0.0, 600.0],
+                           [2057.0, 600.0], [2057.0, 0.0]]
+            Lb = 40.0
+            return coordinates
+
+    coordinates = [[0.0, 0.0], [0.0, building_length],
+                   [building_width, building_length], [building_width, 0.0]]
+    Lb = building_height
+    return coordinates
 
 
 def build_polygons(coordinates):
@@ -216,24 +228,33 @@ def calculate_zones(building, Lb=0):
     return zones
 
 
-def build_arrays(num_arrays=0, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
-    margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
-    margin_bottom = LineString(
-        [[0, distance_bottom], [max_x, distance_bottom]])
-    array_origin = margin_left.intersection(margin_bottom)
-    # new array_origin == x,y from csv
-    panel_list = []
+def build_arrays(csv=False, coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
-    for row in range(rows):
-        gap = gap_length if row >= 1 else 0
-        for column in range(columns):
-            panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
-                                 [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
-            row_column = (str(row+1)+','+str(column+1))
-            # this variable represents each panel's row,column accounting for zero-indexing
+    panel_list = []
+    if csv:
+        for pair in coordinates:
+            panel_origin = dict(x=pair[0], y=pair[1])
+            panel_coordinates = [[panel_origin['x'] + (module_width), panel_origin['y']+(module_length)], [panel_origin['x'] + (module_width), panel_origin['y']+module_length + (module_length)],
+                                 [panel_origin['x'] + module_width + (module_width), panel_origin['y']+module_length + (module_length)], [panel_origin['x'] + module_width + (module_width), panel_origin['y']+(module_length)]]
             panel = Panel(module_width, module_length,
-                          Polygon(panel_coordinates), row_column)
+                          Polygon(panel_coordinates))
             array.append(panel)
+
+    # margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
+    # margin_bottom = LineString(
+    #     [[0, distance_bottom], [max_x, distance_bottom]])
+    # array_origin = margin_left.intersection(margin_bottom)
+    # # new array_origin == x,y from csv
+    # for row in range(rows):
+    #     gap = gap_length if row >= 1 else 0
+    #     for column in range(columns):
+    #         panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
+    #                              [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
+    #         row_column = (str(row+1)+','+str(column+1))
+    #         # this variable represents each panel's row,column accounting for zero-indexing
+    #         panel = Panel(module_width, module_length,
+    #                       Polygon(panel_coordinates), row_column)
+    #         array.append(panel)
     for panel in array:
         panel_list.append(panel.polygon)
     panel_tree = STRtree(panel_list)
@@ -283,7 +304,7 @@ def check_neighbors(array, panel_tree, module_width, module_length):
         # print(panel_value)
         # print(panel.row_column, panel.panel_class)
         # print('--')
-    return north_ray, south_ray, east_ray, west_ray
+    # return north_ray, south_ray, east_ray, west_ray
 
 
 def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighbor_w=False):
@@ -398,16 +419,20 @@ def calculate_intersection(array, zones):
 
 
 def main():
-    coords, width, length = parse_csv(acme_filepath)
-    building_coordinates, Lb = calculate_building_coordinates(True)
+    coords, building_width, building_length, building_height = parse_csv(
+        acme_filepath)
+    building_coordinates = calculate_building_coordinates(
+        building_width=building_width, building_length=building_length, building_height=building_height)
     building = build_polygons(building_coordinates)
-    max_x, max_y = building.bounds[2], building.bounds[3]
-    zones = calculate_zones(building, Lb=Lb)
-    array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
-                         columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    calculate_load_sharing(array)
-    # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=max_x, max_y=max_y, show=True)
+    # max_x, max_y = building.bounds[2], building.bounds[3]
+    zones = calculate_zones(building, Lb)
+    array = build_arrays(csv=True, coordinates=coords,
+                         module_width=4, module_length=2, gap_length=0)
+    # array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
+    #                      columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
+    # calculate_load_sharing(array)
+    graph_polygons(
+        building=building, zones=zones, array=array, max_x=building_width, max_y=building_length, show=True)
     # intersections = Polygons.calculate_intersection(array, zones)
     # for zone in intersections:
     #     for panel in intersections[zone]:
