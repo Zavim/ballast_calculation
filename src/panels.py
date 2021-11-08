@@ -1,17 +1,5 @@
-import csv
-import sys
-import matplotlib.pyplot as plt
-
 from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
-from descartes import PolygonPatch
-
-zones_filepath = 'csv/zones.csv'
-zone_formulas_filepath = 'csv/zoneFormulas.csv'
-building_filepath = 'csv/bigBuilding.csv'
-alberta_filepath = 'csv/albertaGap.csv'
-acme_filepath = 'csv/acmeRoof.csv'
-# building_filepath = 'csv/building.csv'
 
 
 class Panel:
@@ -26,214 +14,10 @@ class Panel:
         self.GCL = GCL
 
 
-def parse_csv(filepath):
-    with open(filepath, 'r') as readFile:
-        fieldnames = ["x", "y", "pressure_for_lifting"]
-        csv_file = csv.DictReader(readFile, fieldnames)
-        # header = csv_file[0]
-        coord_row = []
-        coordinates = []
-        try:
-            for row in csv_file:
-                try:
-                    coord_row.append(float(row['x']))
-                    coord_row.append(float(row['y']))
-                    coordinates.append(coord_row)
-                    coord_row = []
-                except ValueError:
-                    if row['x'] == 'width':
-                        building_width = float(row['y'])
-                    if row['x'] == 'length':
-                        building_length = float(row['y'])
-                    if row['x'] == 'nw height':
-                        building_height = float(row['y'])
-                    if row['x'] == 'ne height':
-                        if building_height != float(row['y']):
-                            sys.exit('building is not flat')
-                    if row['x'] == 'sw height':
-                        if building_height != float(row['y']):
-                            sys.exit('building is not flat')
-                    if row['x'] == 'se height':
-                        if building_height != float(row['y']):
-                            sys.exit('building is not flat')
-                    pass
-        except csv.Error as e:
-            sys.exit('file {}, line {}: {}'.format(
-                filepath, csv_file.line_num, e))
-    return coordinates, building_width, building_length, building_height
-
-
-def calculate_building_coordinates(preset='', building_width=0, building_length=0, building_height=0):
-    global Lb
-    if preset:
-        if preset == 'default':
-            coordinates = [[0.0, 0.0], [0.0, 500.0],
-                           [500.0, 500.0], [500.0, 0.0]]
-            Lb = 15.0
-            return coordinates
-
-        if preset == 'alberta':
-            coordinates = [[0.0, 0.0], [0.0, 600.0],
-                           [2057.0, 600.0], [2057.0, 0.0]]
-            Lb = 40.0
-            return coordinates
-
-    coordinates = [[0.0, 0.0], [0.0, building_length],
-                   [building_width, building_length], [building_width, 0.0]]
-    Lb = building_height
-    return coordinates
-
-
-def build_polygons(coordinates):
-    polygon = Polygon(coordinates)
-    return polygon
-
-
-def calculate_zones(building, Lb=0):
-    # Lb is building height
-    BX1 = building.bounds[0]
-    BY1 = building.bounds[1]
-    BX2 = building.bounds[0]
-    BY2 = building.bounds[3]
-    BX3 = building.bounds[2]
-    BY3 = building.bounds[3]
-    BX4 = building.bounds[2]
-    BY4 = building.bounds[1]
-    formulas = {'3A1': {1: [BX3, BY3],
-                        2: [BX3, BY3-2*Lb],
-                        3: [BX3-2*Lb, BY3-2*Lb],
-                        4: [BX3-0.5*Lb, BY3]},
-                '3A2': {1: [BX3-0.5*Lb, BY3],
-                        2: [BX3-2*Lb, BY3-2*Lb],
-                        3: [BX3-4*Lb, BY3-2*Lb],
-                        4: [BX3-4*Lb, BY3]},
-                '3B': {1: [BX3, BY3-2*Lb],
-                       2: [BX3, BY3-4*Lb],
-                       3: [BX3-2*Lb, BY3-4*Lb],
-                       4: [BX3-2*Lb, BY3-2*Lb]},
-                '3C': {1: [BX3-6*Lb, BY3],
-                       2: [BX3-4*Lb, BY3],
-                       3: [BX3-4*Lb, BY3-2*Lb],
-                       4: [BX3-2*Lb, BY3-2*Lb],
-                       5: [BX3-2*Lb, BY3-4*Lb],
-                       6: [BX3, BY3-4*Lb],
-                       7: [BX3, BY3-6*Lb],
-                       8: [BX3-4*Lb, BY3-6*Lb],
-                       9: [BX3-4*Lb, BY3-4*Lb],
-                       10: [BX3-6*Lb, BY3-4*Lb]},
-                '4E': {1: [BX4-5*Lb, BY4+2*Lb],
-                       2: [BX4-5*Lb, BY4],
-                       3: [BX1, BY1],
-                       4: [BX1, BY1+3*Lb],
-                       5: [BX4-7*Lb, BY4+3*Lb],
-                       6: [BX4-7*Lb, BY4+2*Lb]},
-                '4F1': {1: [BX4, BY4],
-                        2: [BX4-2*Lb, BY4],
-                        3: [BX4-2*Lb, BY4+Lb],
-                        4: [BX4, BY4+0.5*Lb]},
-                '4F2': {1: [BX4-2*Lb, BY4+2*Lb],
-                        2: [BX4-2*Lb, BY4],
-                        3: [BX4-5*Lb, BY4],
-                        4: [BX4-5*Lb, BY4+2*Lb]},
-                '4G1': {1: [BX4, BY4+3*Lb],
-                        2: [BX4, BY4+0.5*Lb],
-                        3: [BX4-2*Lb, BY4+Lb],
-                        4: [BX4-2*Lb, BY4+3*Lb]},
-                '4G2': {1: [BX4-2*Lb, BY4+6*Lb],
-                        2: [BX4, BY4+6*Lb],
-                        3: [BX4, BY4+3*Lb],
-                        4: [BX4-2*Lb, BY4+3*Lb],
-                        5: [BX4-2*Lb, BY4+2*Lb],
-                        6: [BX4-7*Lb, BY4+2*Lb],
-                        7: [BX4-7*Lb, BY4+4*Lb],
-                        8: [BX4-2*Lb, BY4+4*Lb]},
-                '2A1': {1: [BX2, BY2],
-                        2: [BX2+0.5*Lb, BY2],
-                        3: [BX2+2*Lb, BY2-2*Lb],
-                        4: [BX2, BY2-2*Lb]},
-                '2A2': {1: [BX2+0.5*Lb, BY2],
-                        2: [BX2+4*Lb, BY2],
-                        3: [BX2+4*Lb, BY2-2*Lb],
-                        4: [BX2+2*Lb, BY2-2*Lb]},
-                '2B': {1: [BX2, BY2-2*Lb],
-                       2: [BX2+2*Lb, BY2-2*Lb],
-                       3: [BX2+2*Lb, BY2-4*Lb],
-                       4: [BX2, BY2-4*Lb]},
-                '2C': {1: [BX2+4*Lb, BY2],
-                       2: [BX2+6*Lb, BY2],
-                       3: [BX2+6*Lb, BY2-4*Lb],
-                       4: [BX2+4*Lb, BY2-4*Lb],
-                       5: [BX2+4*Lb, BY2-6*Lb],
-                       6: [BX2, BY2-6*Lb],
-                       7: [BX2, BY2-4*Lb],
-                       8: [BX2+2*Lb, BY2-4*Lb],
-                       9: [BX2+2*Lb, BY2-2*Lb],
-                       10: [BX2+4*Lb, BY2-2*Lb]},
-                '1E': {1: [BX1+5*Lb, BY1],
-                       2: [BX1+5*Lb, BY1+2*Lb],
-                       3: [BX1+7*Lb, BY1+2*Lb],
-                       4: [BX1+7*Lb, BY1+3*Lb],
-                       5: [BX4, BY4+3*Lb],
-                       6: [BX4, BY4]},
-                '1F1': {1: [BX1, BY1],
-                        2: [BX1, BY1+0.5*Lb],
-                        3: [BX1+2*Lb, BY1+1*Lb],
-                        4: [BX1+2*Lb, BY1]},
-                '1F2': {1: [BX1+2*Lb, BY1],
-                        2: [BX1+2*Lb, BY1+2*Lb],
-                        3: [BX1+5*Lb, BY1+2*Lb],
-                        4: [BX1+5*Lb, BY1]},
-                '1G1': {1: [BX1, BY1+0.5*Lb],
-                        2: [BX1, BY1+3*Lb],
-                        3: [BX1+2*Lb, BY1+3*Lb],
-                        4: [BX1+2*Lb, BY1+1*Lb]},
-                '1G2': {1: [BX1, BY1+3*Lb],
-                        2: [BX1, BY1+6*Lb],
-                        3: [BX1+2*Lb, BY1+6*Lb],
-                        4: [BX1+2*Lb, BY1+4*Lb],
-                        5: [BX1+7*Lb, BY1+4*Lb],
-                        6: [BX1+7*Lb, BY1+2*Lb],
-                        7: [BX1+2*Lb, BY1+2*Lb],
-                        8: [BX1+2*Lb, BY1+3*Lb]},
-                'D': {1: [BX1, BY1+6*Lb],
-                      2: [BX2, BY2-6*Lb],
-                      3: [BX2+4*Lb, BY2-6*Lb],
-                      4: [BX2+4*Lb, BY2-4*Lb],
-                      5: [BX2+6*Lb, BY2-4*Lb],
-                      6: [BX2+6*Lb, BY2],
-                      7: [BX3-6*Lb, BY3],
-                      8: [BX3-6*Lb, BY3-4*Lb],
-                      9: [BX3-4*Lb, BY3-4*Lb],
-                      10: [BX3-4*Lb, BY3-6*Lb],
-                      11: [BX3, BY3-6*Lb],
-                      12: [BX3, BY3-4*Lb],
-                      13: [BX4, BY4+6*Lb],
-                      14: [BX4-2*Lb, BY4+6*Lb],
-                      15: [BX4-2*Lb, BY4+4*Lb],
-                      16: [BX4-7*Lb, BY4+4*Lb],
-                      17: [BX4-7*Lb, BY4+3*Lb],
-                      18: [BX1+7*Lb, BY1+3*Lb],
-                      19: [BX1+7*Lb, BY1+4*Lb],
-                      20: [BX1+2*Lb, BY1+4*Lb],
-                      21: [BX1+2*Lb, BY1+6*Lb]}
-                }
-    zones = {}
-    for key in formulas:
-        zones[key] = list(iter(formulas[key].values()))
-        zones[key] = build_polygons(zones[key])
-    # must use iter() since the
-    # values in formulas are inside a nested dict
-    # that iter obj is converted to a list using list()
-    # for easy passing to build_polygons
-    # this lets us have a dict that perserves the key values
-    # so that each zone can have a label when graphed
-    return zones
-
-
 def build_arrays(csv=False, coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
     panel_list = []
-    global panel_tree
+    panel_tree = []
     if csv:
         for pair in coordinates:
             panel_origin = dict(x=pair[0], y=pair[1])
@@ -267,6 +51,11 @@ def build_arrays(csv=False, coordinates=None, rows=0, columns=0, module_width=0,
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
     return array
+
+
+def build_polygons(coordinates):
+    polygon = Polygon(coordinates)
+    return polygon
 
 
 def check_neighbors(array, panel_tree, module_width, module_length):
@@ -319,7 +108,7 @@ def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighb
     return panel_class
 
 
-def calculate_load_sharing(array):
+def calculate_load_sharing(array, Lb):
     Aref = 18
     # Aref == panel area
     Atrib = Aref * 1
@@ -365,107 +154,3 @@ def calculate_load_sharing(array):
     for panel in array:
         panel.An = An
         # print(panel.An)
-
-
-def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
-    colors = {'3A1': '#c00000',
-              '1E': '#00b050',
-              '3A2': '#ff00ff',
-              '3B': '#ffc000',
-              '3C': '#0070c0',
-              '4E': '#00b050',
-              '4F1': '#7030a0',
-              '4F2': '#61bed4',
-              '4G1': '#b3a2c7',
-              '4G2': '#98b954',
-              '2A1': '#c00000',
-              '2A2': '#ff00ff',
-              '2B': '#ffc000',
-              '2C': '#0070c0',
-              '1F1': '#7030a0',
-              '1F2': '#61bed4',
-              '1G1': '#b3a2c7',
-              '1G2': '#98b954',
-              'D': '#ff0000'
-              }
-    fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
-    ax.set_xlim(0, max_x)
-    ax.set_ylim(0, max_y)
-    if show:
-        if building:
-            ax.add_artist(PolygonPatch(building, alpha=.25))
-        if zones:
-            for zone in zones:
-                ax.add_artist(PolygonPatch(
-                    zones[zone], facecolor=colors[zone], alpha=.5))
-                ax.text(zones[zone].centroid.x,
-                        zones[zone].centroid.y, zone)
-                # centroid represents the center of the polygon
-        if array:
-            for panel in array:
-                ax.add_artist(PolygonPatch(
-                    panel.polygon, facecolor='#000050', alpha=.75))
-        plt.show()
-    return ax
-
-
-def calculate_intersection(array, zones):
-    intersections = {}
-    # zone_intersections = {}
-    for zone in iter(zones):
-        for panel in array:
-            intersects = panel.polygon.intersects(zones[zone])
-            if intersects:
-                intersection = (panel.polygon.intersection(
-                    zones[zone].buffer(0)))
-                if intersection.area > 0.0:
-                    intersections[panel] = intersection.area
-                    # zone_intersections[zone] = dict(intersections)
-                    panel.zone = zone
-    # return zone_intersections
-
-
-def main():
-    coords, building_width, building_length, building_height = parse_csv(
-        alberta_filepath)
-    building_coordinates = calculate_building_coordinates(
-        building_width=building_width, building_length=building_length, building_height=building_height)
-    building = build_polygons(building_coordinates)
-    # max_x, max_y = building.bounds[2], building.bounds[3]
-    zones = calculate_zones(building, Lb)
-    array = build_arrays(csv=True, coordinates=coords,
-                         module_width=4, module_length=2, gap_length=0)
-    # array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
-    #                      columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    calculate_load_sharing(array)
-    # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=building_width, max_y=building_length, show=True)
-    intersections = calculate_intersection(array, zones)
-    for panel in array:
-        print(panel.zone, panel.An)
-    # for zone in intersections:
-    #     for panel in intersections[zone]:
-    #         print('panel:', panel, 'zone:', zone, 'area:', str(
-    #             intersections[zone][panel]) + ' sqft.')
-    # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
-    #      array, module_width=4, module_length=2)
-    # ---debugging---
-    # array, north_ray, south_ray, east_ray, west_ray = Polygons.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
-    #                                                                         columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    # x, y = north_ray.xy
-    # ax.plot(x, y)
-    # x, y = east_ray.xy
-    # ax.plot(x, y)
-    # x, y = south_ray.xy
-    # ax.plot(x, y)
-    # x, y = west_ray.xy
-    # ax.plot(x, y)
-    # for panel in array:
-    #     ax.add_artist(PolygonPatch(
-    #         panel.polygon, facecolor='#000050', alpha=.75))
-
-    # plt.show()
-
-
-if __name__ == '__main__':
-    main()

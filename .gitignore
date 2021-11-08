@@ -1,3 +1,4 @@
 /.vscode
 /Pipfile.lock
 /tasks.json
+src/__pycache__/
