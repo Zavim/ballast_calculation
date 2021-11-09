@@ -8,6 +8,7 @@ shapely = "*"
 matplotlib = "*"
 descartes = "*"
 flask = "*"
+scipy = "*"
 
 [dev-packages]
 yapf = "*"

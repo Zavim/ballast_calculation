@@ -2,7 +2,6 @@ import csv
 import sys
 import matplotlib.pyplot as plt
 from descartes import PolygonPatch
-import config
 import panels
 import builder
 
@@ -11,18 +10,6 @@ import builder
 alberta_filepath = 'csv/albertaGap.csv'
 acme_filepath = 'csv/acmeRoof.csv'
 # building_filepath = 'csv/building.csv'
-
-
-class Panel:
-    def __init__(self,  width, length, polygon, row_column=0, panel_class=None, An=0, zone='', GCL=0):
-        self.width = width
-        self.length = length
-        self.polygon = polygon
-        self.row_column = row_column
-        self.panel_class = panel_class
-        self.An = An
-        self.zone = zone
-        self.GCL = GCL
 
 
 def parse_csv(filepath):
@@ -104,40 +91,23 @@ def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show
     return ax
 
 
-def calculate_intersection(array, zones):
-    intersections = {}
-    # zone_intersections = {}
-    for zone in iter(zones):
-        for panel in array:
-            intersects = panel.polygon.intersects(zones[zone])
-            if intersects:
-                intersection = (panel.polygon.intersection(
-                    zones[zone].buffer(0)))
-                if intersection.area > 0.0:
-                    intersections[panel] = intersection.area
-                    # zone_intersections[zone] = dict(intersections)
-                    panel.zone = zone
-    # return zone_intersections
-
-
 def main():
     coords, building_width, building_length, building_height = parse_csv(
-        alberta_filepath)
+        acme_filepath)
     building_coordinates = builder.calculate_building_coordinates(
         building_width=building_width, building_length=building_length, building_height=building_height)
     building = panels.build_polygons(building_coordinates)
-    # max_x, max_y = building.bounds[2], building.bounds[3]
     zones = builder.calculate_zones(building, Lb=building_height)
     array = panels.build_arrays(csv=True, coordinates=coords,
                                 module_width=4, module_length=2, gap_length=0)
     # array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
     #                      columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
+    panels.calculate_panel_zones(array, zones)
     panels.calculate_load_sharing(array, Lb=building_height)
     # graph_polygons(
     #     building=building, zones=zones, array=array, max_x=building_width, max_y=building_length, show=True)
-    intersections = calculate_intersection(array, zones)
-    for panel in array:
-        print(panel.zone, panel.An)
+    # for panel in array:
+    #     print(panel.zone, panel.An)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
