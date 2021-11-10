@@ -6,18 +6,17 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
         if preset == 'default':
             coordinates = [[0.0, 0.0], [0.0, 500.0],
                            [500.0, 500.0], [500.0, 0.0]]
-            Lb = 15.0
-            return coordinates
+            building_height = 15.0
+            return coordinates, building_height
 
         if preset == 'alberta':
             coordinates = [[0.0, 0.0], [0.0, 600.0],
                            [2057.0, 600.0], [2057.0, 0.0]]
-            Lb = 40.0
-            return coordinates
+            building_height = 40.0
+            return coordinates, building_height
 
     coordinates = [[0.0, 0.0], [0.0, building_length],
                    [building_width, building_length], [building_width, 0.0]]
-    Lb = building_height
     return coordinates
 
 

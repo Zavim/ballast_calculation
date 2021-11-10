@@ -92,22 +92,23 @@ def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show
 
 
 def main():
-    coords, building_width, building_length, building_height = parse_csv(
-        acme_filepath)
-    building_coordinates = builder.calculate_building_coordinates(
-        building_width=building_width, building_length=building_length, building_height=building_height)
+    # coords, building_width, building_length, building_height = parse_csv(
+    #     alberta_filepath)
+    # building_coordinates = builder.calculate_building_coordinates(
+    #     building_width=building_width, building_length=building_length, building_height=building_height)
+    building_coordinates, building_height = builder.calculate_building_coordinates(
+        preset='default')
     building = panels.build_polygons(building_coordinates)
     zones = builder.calculate_zones(building, Lb=building_height)
-    array = panels.build_arrays(csv=True, coordinates=coords,
-                                module_width=4, module_length=2, gap_length=0)
-    # array = build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
-    #                      columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
-    panels.calculate_panel_zones(array, zones)
-    panels.calculate_load_sharing(array, Lb=building_height)
-    # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=building_width, max_y=building_length, show=True)
+    # array = panels.build_arrays(csv_coordinates=coords,
+    #                             module_width=4, module_length=2, gap_length=0)
+    array = panels.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
+                                columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
+    # panels.calculate_load_sharing(array, Lb=building_height)
     # for panel in array:
-    #     print(panel.zone, panel.An)
+    #     print(panel.panel_class)
+    graph_polygons(
+        building=building, zones=zones, array=array, max_x=500, max_y=500, show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(

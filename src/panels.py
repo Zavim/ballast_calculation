@@ -1,6 +1,6 @@
 from numpy.core.numeric import identity
 from scipy import interpolate
-from shapely.geometry import Polygon, LineString
+from shapely.geometry import Polygon, LineString, Point
 from shapely.strtree import STRtree
 
 
@@ -16,13 +16,13 @@ class Panel:
         self.GCL = GCL
 
 
-def build_arrays(csv=False, coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
+def build_arrays(csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
     panel_list = []
     panel_tree = []
     panel_count = 1
-    if csv:
-        for pair in coordinates:
+    if csv_coordinates:
+        for pair in csv_coordinates:
             panel_origin = dict(x=pair[0], y=pair[1])
             panel_coordinates = [[panel_origin['x'] + (module_width), panel_origin['y']+(module_length)], [panel_origin['x'] + (module_width), panel_origin['y']+module_length + (module_length)],
                                  [panel_origin['x'] + module_width + (module_width), panel_origin['y']+module_length + (module_length)], [panel_origin['x'] + module_width + (module_width), panel_origin['y']+(module_length)]]
@@ -30,22 +30,21 @@ def build_arrays(csv=False, coordinates=None, rows=0, columns=0, module_width=0,
                           length=module_length, polygon=Polygon(panel_coordinates))
             array.append(panel)
             panel_count += 1
-
-    # margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
-    # margin_bottom = LineString(
-    #     [[0, distance_bottom], [max_x, distance_bottom]])
-    # array_origin = margin_left.intersection(margin_bottom)
-    # # new array_origin == x,y from csv
-    # for row in range(rows):
-    #     gap = gap_length if row >= 1 else 0
-    #     for column in range(columns):
-    #         panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
-    #                              [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
-    #         row_column = (str(row+1)+','+str(column+1))
-    #         # this variable represents each panel's row,column accounting for zero-indexing
-    #         panel = Panel(module_width, module_length,
-    #                       Polygon(panel_coordinates), row_column)
-    #         array.append(panel)
+    else:
+        margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
+        margin_bottom = LineString(
+            [[0, distance_bottom], [max_x, distance_bottom]])
+        array_origin = margin_left.intersection(margin_bottom)
+        for row in range(rows):
+            gap = gap_length if row >= 1 else 0
+            for column in range(columns):
+                panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
+                                     [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
+                row_column = (str(row+1)+','+str(column+1))
+                # this variable represents each panel's row,column accounting for zero-indexing
+                panel = Panel(identity=panel_count, width=module_width,
+                              length=module_length, polygon=Polygon(panel_coordinates))
+                array.append(panel)
     for panel in array:
         panel_list.append(panel.polygon)
     panel_tree = STRtree(panel_list)
@@ -63,8 +62,8 @@ def build_polygons(coordinates):
 
 
 def check_neighbors(array, panel_tree, module_width, module_length):
-    # neighbor_dist = .5
-    neighbor_dist = .5 + 11/12
+    neighbor_dist = 4  # alberta
+    # neighbor_dist = .5 + 11/12
     # 6 inches == half a ft, 11/12 is the 11in gap length on Acme building
     for panel in array:
         north_ray = LineString([[panel.polygon.centroid.x, panel.polygon.centroid.y+(.5*module_length)+.05], [
@@ -113,11 +112,11 @@ def calculate_panel_zones(array, zones):
                 intersection = (panel.polygon.intersection(
                     zones[zone].buffer(0)))
                 if intersection.area > 0.0:
-                    intersections[panel.identity] = intersection.area
+                    if zone not in panel.zones:
+                        panel.zones.append(zone)
+                     # intersections[panel.identity] = intersection.area
                     # zone_intersections[zone] = dict(intersections)
-                    # if zone not in panel.zones:
-                    #     panel.zones.append(zone)
-    print(intersections)
+    # print(intersections)
     # return zone_intersections
 
 
@@ -185,8 +184,8 @@ def calculate_load_sharing(array, Lb):
                'lift': {1: -0.130, 2: -0.105, 3: -0.091, 4: -0.080, 5: -0.073, 6: -0.068, 7: -0.063, 8: -0.060, 9: -0.056, 10: -0.053, 11: -0.039, 12: -0.033, 13: -0.030, 14: -0.028, 15: -0.027, 16: -0.027, 17: -0.026, 18: -0.025, 19: -0.025},
                'mu8': {1: -0.180, 2: -0.145, 3: -0.125, 4: -0.110, 5: -0.102, 6: -0.095, 7: -0.089, 8: -0.084, 9: -0.080, 10: -0.077, 11: -0.060, 12: -0.052, 13: -0.047, 14: -0.044, 15: -0.041, 16: -0.041, 17: -0.041, 18: -0.041, 19: -0.040},
                'mu5': {1: -0.200, 2: -0.166, 3: -0.145, 4: -0.130, 5: -0.121, 6: -0.113, 7: -0.106, 8: -0.101, 9: -0.096, 10: -0.094, 11: -0.078, 12: -0.070, 13: -0.068, 14: -0.065, 15: -0.063, 16: -0.062, 17: -0.062, 18: -0.060, 19: -0.060}}
-    for panel in array:
-        # panel.An = An
-        print(panel.zones)
+    # for panel in array:
+    #     # panel.An = An
+    #     print(panel.zones)
     # GCL
     # extrapolate(lift_graph)
