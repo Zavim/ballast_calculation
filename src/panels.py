@@ -5,7 +5,7 @@ from shapely.strtree import STRtree
 
 
 class Panel:
-    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones=[], GCL=0):
+    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, GCL=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -45,11 +45,13 @@ def build_arrays(csv_coordinates=None, rows=0, columns=0, module_width=0, module
                 panel = Panel(identity=panel_count, width=module_width,
                               length=module_length, polygon=Polygon(panel_coordinates))
                 array.append(panel)
+                panel_count += 1
     for panel in array:
         panel_list.append(panel.polygon)
     panel_tree = STRtree(panel_list)
     check_neighbors(
         array, panel_tree, module_width, module_length)
+    # calculate_panel_zones(array,)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
@@ -62,8 +64,8 @@ def build_polygons(coordinates):
 
 
 def check_neighbors(array, panel_tree, module_width, module_length):
-    neighbor_dist = 4  # alberta
-    # neighbor_dist = .5 + 11/12
+    # neighbor_dist = 4  # alberta
+    neighbor_dist = .5 + 11/12
     # 6 inches == half a ft, 11/12 is the 11in gap length on Acme building
     for panel in array:
         north_ray = LineString([[panel.polygon.centroid.x, panel.polygon.centroid.y+(.5*module_length)+.05], [
@@ -104,18 +106,22 @@ def check_neighbors(array, panel_tree, module_width, module_length):
 
 def calculate_panel_zones(array, zones):
     intersections = {}
+    panel_zones = {}
     # zone_intersections = {}
-    for zone in iter(zones):
-        for panel in array:
+    for panel in array:
+        for zone in iter(zones):
             intersects = panel.polygon.intersects(zones[zone])
             if intersects:
                 intersection = (panel.polygon.intersection(
                     zones[zone].buffer(0)))
                 if intersection.area > 0.0:
-                    if zone not in panel.zones:
-                        panel.zones.append(zone)
-                     # intersections[panel.identity] = intersection.area
-                    # zone_intersections[zone] = dict(intersections)
+                    if zone not in panel_zones:
+                        panel_zones[zone] = intersection.area
+                        # print(panel.identity, panel_zones)
+                        panel.zones = panel_zones
+        panel_zones = {}
+    # intersections[panel.identity] = intersection.area
+    # zone_intersections[zone] = dict(intersections)
     # print(intersections)
     # return zone_intersections
 

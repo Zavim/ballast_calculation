@@ -104,11 +104,12 @@ def main():
     #                             module_width=4, module_length=2, gap_length=0)
     array = panels.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
                                 columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
-    # panels.calculate_load_sharing(array, Lb=building_height)
-    # for panel in array:
-    #     print(panel.panel_class)
-    graph_polygons(
-        building=building, zones=zones, array=array, max_x=500, max_y=500, show=True)
+    panels.calculate_load_sharing(array, Lb=building_height)
+    panels.calculate_panel_zones(array, zones)
+    for panel in array:
+        print(panel.identity, panel.zones)
+    # graph_polygons(
+    #     building=building, zones=zones, array=array, max_x=500, max_y=500, show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
