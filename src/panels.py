@@ -1,6 +1,6 @@
 from numpy.core.numeric import identity
 from scipy import interpolate
-from shapely.geometry import Polygon, LineString, Point
+from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
 
 
@@ -16,7 +16,7 @@ class Panel:
         self.GCL = GCL
 
 
-def build_arrays(csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
+def build_arrays(zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
     panel_list = []
     panel_tree = []
@@ -40,8 +40,6 @@ def build_arrays(csv_coordinates=None, rows=0, columns=0, module_width=0, module
             for column in range(columns):
                 panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
                                      [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
-                row_column = (str(row+1)+','+str(column+1))
-                # this variable represents each panel's row,column accounting for zero-indexing
                 panel = Panel(identity=panel_count, width=module_width,
                               length=module_length, polygon=Polygon(panel_coordinates))
                 array.append(panel)
@@ -51,16 +49,12 @@ def build_arrays(csv_coordinates=None, rows=0, columns=0, module_width=0, module
     panel_tree = STRtree(panel_list)
     check_neighbors(
         array, panel_tree, module_width, module_length)
-    # calculate_panel_zones(array,)
+    calculate_panel_zones(array, zones)
+    calculate_load_sharing(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
     return array
-
-
-def build_polygons(coordinates):
-    polygon = Polygon(coordinates)
-    return polygon
 
 
 def check_neighbors(array, panel_tree, module_width, module_length):
@@ -135,18 +129,18 @@ def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighb
     return panel_class
 
 
-def extrapolate(graph):
+def extrapolate(x_dict, y_dict, value):
     x = []
     y = []
-    for zone in iter(graph):
-        for field in graph[zone]:
-            x.append(field)
-            y.append(graph[zone][field])
+    for key in x_dict:
+        x.append(x_dict[key])
+    for key in y_dict:
+        y.append(y_dict[key])
     extrapolator = interpolate.interp1d(x, y, fill_value="extrapolate")
-    print(x, y, extrapolator(12))
+    return extrapolator(value)
 
 
-def calculate_load_sharing(array, Lb):
+def calculate_load_sharing(array, Lb, graph_type=None):
     Aref = 18
     # Aref == panel area
     Atrib = Aref * 1
@@ -190,8 +184,12 @@ def calculate_load_sharing(array, Lb):
                'lift': {1: -0.130, 2: -0.105, 3: -0.091, 4: -0.080, 5: -0.073, 6: -0.068, 7: -0.063, 8: -0.060, 9: -0.056, 10: -0.053, 11: -0.039, 12: -0.033, 13: -0.030, 14: -0.028, 15: -0.027, 16: -0.027, 17: -0.026, 18: -0.025, 19: -0.025},
                'mu8': {1: -0.180, 2: -0.145, 3: -0.125, 4: -0.110, 5: -0.102, 6: -0.095, 7: -0.089, 8: -0.084, 9: -0.080, 10: -0.077, 11: -0.060, 12: -0.052, 13: -0.047, 14: -0.044, 15: -0.041, 16: -0.041, 17: -0.041, 18: -0.041, 19: -0.040},
                'mu5': {1: -0.200, 2: -0.166, 3: -0.145, 4: -0.130, 5: -0.121, 6: -0.113, 7: -0.106, 8: -0.101, 9: -0.096, 10: -0.094, 11: -0.078, 12: -0.070, 13: -0.068, 14: -0.065, 15: -0.063, 16: -0.062, 17: -0.062, 18: -0.060, 19: -0.060}}
-    # for panel in array:
-    #     # panel.An = An
-    #     print(panel.zones)
-    # GCL
-    # extrapolate(lift_graph)
+
+    for panel in array:
+        for zone in panel.zones:
+            if zone == 'D':
+                panel.GCL = extrapolate(
+                    d_graph['modules'], d_graph['lift'], An)
+            else:
+                panel.GCL = extrapolate(
+                    lift_graph['An'], lift_graph[zone[1:]], An)

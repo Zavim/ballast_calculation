@@ -1,4 +1,9 @@
-from panels import build_polygons
+from shapely.geometry import Polygon
+
+
+def build_polygons(coordinates):
+    polygon = Polygon(coordinates)
+    return polygon
 
 
 def calculate_building_coordinates(preset='', building_width=0, building_length=0, building_height=0):
@@ -30,6 +35,7 @@ def calculate_zones(building, Lb=0):
     BY3 = building.bounds[3]
     BX4 = building.bounds[2]
     BY4 = building.bounds[1]
+#     rename these to direction+zone, eg EA2
     formulas = {'3A1': {1: [BX3, BY3],
                         2: [BX3, BY3-2*Lb],
                         3: [BX3-2*Lb, BY3-2*Lb],
