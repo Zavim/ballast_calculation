@@ -6,8 +6,9 @@ name = "pypi"
 [packages]
 shapely = "*"
 matplotlib = "*"
-geopandas = "*"
 descartes = "*"
+flask = "*"
+scipy = "*"
 
 [dev-packages]
 yapf = "*"
