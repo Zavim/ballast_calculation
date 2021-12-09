@@ -13,10 +13,10 @@ function App() {
 	}, []);
 	return (
 		<>
-			{typeof data.members === "undefined" ? (
+			{typeof data.building === "undefined" ? (
 				<p>Loading...</p>
 			) : (
-				data.members.map((member, i) => <p key={i}>{member}</p>)
+				data.building.map((corner, i) => <p key={i}>{corner}</p>)
 			)}
 		</>
 	);

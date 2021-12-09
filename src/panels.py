@@ -2,10 +2,11 @@ from numpy.core.numeric import identity
 from scipy import interpolate
 from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
+import math
 
 
 class Panel:
-    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, GCL=0):
+    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, GCL=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -14,6 +15,7 @@ class Panel:
         self.An = An
         self.zones = zones
         self.GCL = GCL
+        self.pressure = pressure
 
 
 def build_arrays(zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
@@ -50,7 +52,7 @@ def build_arrays(zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, modu
     check_neighbors(
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
-    calculate_load_sharing(array, Lb)
+    calculate_GCL(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
@@ -101,7 +103,6 @@ def check_neighbors(array, panel_tree, module_width, module_length):
 def calculate_panel_zones(array, zones):
     intersections = {}
     panel_zones = {}
-    # zone_intersections = {}
     for panel in array:
         for zone in iter(zones):
             intersects = panel.polygon.intersects(zones[zone])
@@ -111,7 +112,6 @@ def calculate_panel_zones(array, zones):
                 if intersection.area > 0.0:
                     if zone not in panel_zones:
                         panel_zones[zone] = intersection.area
-                        # print(panel.identity, panel_zones)
                         panel.zones = panel_zones
         panel_zones = {}
     # intersections[panel.identity] = intersection.area
@@ -140,11 +140,12 @@ def extrapolate(x_dict, y_dict, value):
     return extrapolator(value)
 
 
-def calculate_load_sharing(array, Lb, graph_type=None):
-    Aref = 18
+def calculate_GCL(array, Lb, graph_type=None):
+    # Aref = 18
+    Aref = 21  # ANISA
     # Aref == panel area
     Atrib = Aref * 1
-    # tributary area == Aref * load sharing
+    # tributary area == Aref * load share factor
     An = Atrib/(Lb**2)*1000
     lift_graph = {'An': {1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60, 7: 70, 8: 80, 9: 90, 10: 100, 11: 200, 12: 300, 13: 400, 14: 500, 15: 600, 16: 700, 17: 800, 18: 900, 19: 1000, 20: 2000},
                   'A1': {1: -0.72, 2: -0.59, 3: -0.51, 4: -0.46, 5: -0.42, 6: -0.38, 7: -0.35, 8: -0.33, 9: -0.3, 10: -0.29, 11: -0.19, 12: -0.14, 13: -0.12, 14: -0.1, 15: -0.09, 16: -0.08, 17: -0.07, 18: -0.06, 19: -0.05, 20: -0.04},
@@ -185,6 +186,7 @@ def calculate_load_sharing(array, Lb, graph_type=None):
                'mu8': {1: -0.180, 2: -0.145, 3: -0.125, 4: -0.110, 5: -0.102, 6: -0.095, 7: -0.089, 8: -0.084, 9: -0.080, 10: -0.077, 11: -0.060, 12: -0.052, 13: -0.047, 14: -0.044, 15: -0.041, 16: -0.041, 17: -0.041, 18: -0.041, 19: -0.040},
                'mu5': {1: -0.200, 2: -0.166, 3: -0.145, 4: -0.130, 5: -0.121, 6: -0.113, 7: -0.106, 8: -0.101, 9: -0.096, 10: -0.094, 11: -0.078, 12: -0.070, 13: -0.068, 14: -0.065, 15: -0.063, 16: -0.062, 17: -0.062, 18: -0.060, 19: -0.060}}
 
+    qz = 19.9  # ANISA
     for panel in array:
         for zone in panel.zones:
             if zone == 'D':
@@ -193,3 +195,33 @@ def calculate_load_sharing(array, Lb, graph_type=None):
             else:
                 panel.GCL = extrapolate(
                     lift_graph['An'], lift_graph[zone[1:]], An)
+                # if lookup <
+        # if panel.GCL*qz > panel.pressure:
+        panel.pressure = panel.GCL*qz
+        panel.An = An
+
+
+def calculate_forces(building_height=33, elevation=2500, wind_speed=100):
+    z = building_height
+    Zg = 900
+    alpha = 10
+    Kzt = 1
+    Kd = .85
+    Ke = math.e ^ (-.0000362 * elevation)
+    V = wind_speed
+    W = 495  # maybe or MAYBE 528
+    # 435,466 is bottom left of A1 array
+    Aref = 21
+    Ph = 3
+    Atrib = Aref*1
+    if (z < Zg and z > 15):
+        Kz = 2.01 * (z/Zg) ^ (2/alpha)
+    else:
+        print('building height does not fit parameters')
+    Lb = min(z, 0.4 * (W * z) ^ 1/2)
+    An = 1000*Atrib/Lb ^ 2
+    qz = .00256 * Kz * Kzt * Kd * Ke * V ^ 2
+    if (Ph / Lb > .2):
+        gammaP = 1.12
+    else:
+        gammaP = .88+1.2 * (Ph / Lb)

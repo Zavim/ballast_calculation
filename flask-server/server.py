@@ -330,7 +330,7 @@ def calculate_intersection(array, zones):
     return zone_intersections
 
 
-@app.route("/")
+@app.route("/members")
 def main():
     building_coordinates, Lb = calculate_building_coordinates(True)
     return {'building': building_coordinates, 'height': Lb}

@@ -6,7 +6,7 @@ import panels
 import builder
 
 
-# building_filepath = 'csv/bigBuilding.csv'
+# big_building_filepath = 'csv/bigBuilding.csv'
 alberta_filepath = 'csv/albertaGap.csv'
 acme_filepath = 'csv/acmeRoof.csv'
 # building_filepath = 'csv/building.csv'
@@ -46,7 +46,7 @@ def parse_csv(filepath):
         except csv.Error as e:
             sys.exit('file {}, line {}: {}'.format(
                 filepath, csv_file.line_num, e))
-    return coordinates, building_width, building_length, building_height
+        return coordinates, building_width, building_length, building_height
 
 
 def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
@@ -92,22 +92,24 @@ def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show
 
 
 def main():
-    coords, building_width, building_length, building_height = parse_csv(
-        alberta_filepath)
-    building_coordinates = builder.calculate_building_coordinates(
-        building_width=building_width, building_length=building_length, building_height=building_height)
-    # building_coordinates, building_height = builder.calculate_building_coordinates(
-    #     preset='default')
+    # coords, building_width, building_length, building_height = parse_csv(
+    #     big_building_filepath)
+    # building_coordinates = builder.calculate_building_coordinates(
+    #     building_width=building_width, building_length=building_length, building_height=building_height)
+    building_coordinates, building_height = builder.calculate_building_coordinates(
+        preset='anisa')
     building = builder.build_polygons(building_coordinates)
     zones = builder.calculate_zones(building, Lb=building_height)
-    array = panels.build_arrays(zones=zones, Lb=building_height, csv_coordinates=coords,
-                                module_width=4, module_length=2, gap_length=0)
+    # array = panels.build_arrays(zones=zones, Lb=building_height, csv_coordinates=coords,
+    #                             module_width=4, module_length=2, gap_length=0)
     # array = panels.build_arrays(zones=zones, Lb=building_height, module_width=4, module_length=2, gap_length=1, rows=4,
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
-    for panel in array:
-        print(panel.identity, panel.GCL)
+    array = panels.build_arrays(zones=zones, Lb=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
+                                columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
+    # for panel in array:
+    #     print(panel.identity, panel.pressure, panel.GCL)
     # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=500, max_y=500, show=True)
+    #     building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(

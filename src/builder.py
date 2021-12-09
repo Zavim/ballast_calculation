@@ -20,6 +20,12 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
             building_height = 40.0
             return coordinates, building_height
 
+        if preset == 'anisa':
+            coordinates = [[0.0, 0.0], [0.0, 500.0],
+                           [500.0, 500.0], [500.0, 0.0]]
+            building_height = 33.0
+            return coordinates, building_height
+
     coordinates = [[0.0, 0.0], [0.0, building_length],
                    [building_width, building_length], [building_width, 0.0]]
     return coordinates
