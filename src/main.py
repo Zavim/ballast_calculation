@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from descartes import PolygonPatch
 import panels
 import builder
-import output
 
 
 # big_building_filepath = 'csv/bigBuilding.csv'
@@ -111,14 +110,13 @@ def main():
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
     # for panel in array:
     #     print(panel.identity, panel.pressure, panel.GCL)
-    graph_polygons(
-        building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
+    # graph_polygons(
+    #     building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
     #             intersections[zone][panel]) + ' sqft.')
-    # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
-    #      array, module_width=4, module_length=2)
+    panels.calculate_forces()
     # ---debugging---
     # array, north_ray, south_ray, east_ray, west_ray = Polygons.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
     #                                                                         columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)

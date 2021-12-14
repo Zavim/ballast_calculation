@@ -7,7 +7,7 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, GCL=0, pressure=0):
+    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, gcl=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -15,7 +15,7 @@ class Panel:
         self.panel_class = panel_class
         self.An = An
         self.zones = zones
-        self.GCL = GCL
+        self.gcl = gcl
         self.pressure = pressure
 
 
@@ -191,17 +191,17 @@ def calculate_GCL(array, Lb, graph_type=None):
     for panel in array:
         for zone in panel.zones:
             if zone == 'D':
-                panel.GCL = extrapolate(
+                panel.gcl = extrapolate(
                     d_graph['modules'], d_graph['lift'], An)
-                panel.GCL = round(panel.GCL.tolist(), 3)
-                # to list is needed because panel.GCL is a numpy array due to the extrapolate function
+                panel.gcl = round(panel.gcl.tolist(), 3)
+                # to list is needed because panel.gcl is a numpy array due to the extrapolate function
             else:
-                panel.GCL = extrapolate(
+                panel.gcl = extrapolate(
                     lift_graph['An'], lift_graph[zone[1:]], An)
-                panel.GCL = round(panel.GCL.tolist(), 3)
+                panel.gcl = round(panel.gcl.tolist(), 3)
                 # if lookup <
-        # if panel.GCL*qz > panel.pressure:
-        panel.pressure = panel.GCL*qz
+        # if panel.gcl*qz > panel.pressure:
+        panel.pressure = panel.gcl*qz
         panel.An = An
 
 
@@ -211,21 +211,24 @@ def calculate_forces(building_height=33, elevation=2500, wind_speed=100):
     alpha = 10
     Kzt = 1
     Kd = .85
-    Ke = math.e ^ (-.0000362 * elevation)
-    V = wind_speed
-    W = 495  # maybe or MAYBE 528
+    Ke = math.e ** (-.0000362 * elevation)
+    v = wind_speed
+    w = 495  # maybe or MAYBE 528
     # 435,466 is bottom left of A1 array
     Aref = 21
     Ph = 3
     Atrib = Aref*1
     if (z < Zg and z > 15):
-        Kz = 2.01 * (z/Zg) ^ (2/alpha)
+        Kz = 2.01 * (z/Zg) ** (2/alpha)
     else:
         print('building height does not fit parameters')
-    Lb = min(z, 0.4 * (W * z) ^ 1/2)
-    An = 1000*Atrib/Lb ^ 2
-    qz = .00256 * Kz * Kzt * Kd * Ke * V ^ 2
+    Lb = min(z, 0.4 * (w * z) ** 1/2)
+    An = 1000*Atrib/Lb ** 2
+    qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
     if (Ph / Lb > .2):
         gammaP = 1.12
     else:
         gammaP = .88+1.2 * (Ph / Lb)
+    parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
+                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph}
+    output.write_to_csv(parameter_dict)
