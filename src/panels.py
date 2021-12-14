@@ -3,6 +3,7 @@ from scipy import interpolate
 from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
 import math
+import output
 
 
 class Panel:
@@ -192,9 +193,12 @@ def calculate_GCL(array, Lb, graph_type=None):
             if zone == 'D':
                 panel.GCL = extrapolate(
                     d_graph['modules'], d_graph['lift'], An)
+                panel.GCL = round(panel.GCL.tolist(), 3)
+                # to list is needed because panel.GCL is a numpy array due to the extrapolate function
             else:
                 panel.GCL = extrapolate(
                     lift_graph['An'], lift_graph[zone[1:]], An)
+                panel.GCL = round(panel.GCL.tolist(), 3)
                 # if lookup <
         # if panel.GCL*qz > panel.pressure:
         panel.pressure = panel.GCL*qz

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from descartes import PolygonPatch
 import panels
 import builder
+import output
 
 
 # big_building_filepath = 'csv/bigBuilding.csv'
@@ -87,6 +88,8 @@ def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show
             for panel in array:
                 ax.add_artist(PolygonPatch(
                     panel.polygon, facecolor='#000050', alpha=.75))
+                ax.text(panel.polygon.centroid.x,
+                        panel.polygon.centroid.y, panel.GCL, color='white')
         plt.show()
     return ax
 
@@ -108,8 +111,8 @@ def main():
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
     # for panel in array:
     #     print(panel.identity, panel.pressure, panel.GCL)
-    # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
+    graph_polygons(
+        building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
