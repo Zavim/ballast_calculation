@@ -40,6 +40,30 @@ def temp_calculate_gamma_p(parapet_height, Lb=0):
         print('parapet height is equal to .2')
 
 
+def calculate_vortex_zones(building):
+    BX1 = building.bounds[0]
+    BY1 = building.bounds[1]
+    BX2 = building.bounds[0]
+    BY2 = building.bounds[3]
+    BX3 = building.bounds[2]
+    BY3 = building.bounds[3]
+    BX4 = building.bounds[2]
+    BY4 = building.bounds[1]
+    vortex_formulas = {'VNE-E': {1: [BX1, BY1],
+                                 2: [BX1, BY2], 3: [BX3, BY2], 4: [(BX3-BY2), BY1]},
+                       'VNE-N': {1: [(BX3-BY2), BY1], 2: [BX3, BY2], 3: [BX3, BY1]},
+                       'VNW-W': {1: [BX1, BY2], 2: [BX3, BY2], 3: [BX3, BY1], 4: [BY2, BX1]},
+                       'VNW-N': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BX1]},
+                       'VSW-W': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BY2]},
+                       'VSE-E': {1: [BX1, BY1], 2: [BX1, BY2], 3: [(BX3-BY2), BY2], 4: [BX3, BY1]},
+                       'VSE-S': {1: [(BX3-BY2), BY2], 2: [BX3, BY2], 3: [BX3, BY1]}}
+    vortex_zones = {}
+    for key in vortex_formulas:
+        vortex_zones[key] = list(iter(vortex_formulas[key].values()))
+        vortex_zones[key] = build_polygons(vortex_zones[key])
+    return vortex_zones
+
+
 def calculate_zones(building, Lb=0):
     # Lb is building height
     BX1 = building.bounds[0]

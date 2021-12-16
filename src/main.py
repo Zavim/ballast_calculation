@@ -49,7 +49,7 @@ def parse_csv(filepath):
         return coordinates, building_width, building_length, building_height
 
 
-def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show=True):
+def graph_polygons(building=None, zones=None, vortex_zones=None, array=None, max_x=0, max_y=0, show=True):
     colors = {'3A1': '#c00000',
               '1E': '#00b050',
               '3A2': '#ff00ff',
@@ -88,7 +88,13 @@ def graph_polygons(building=None, zones=None, array=None, max_x=0, max_y=0, show
                 ax.add_artist(PolygonPatch(
                     panel.polygon, facecolor='#000050', alpha=.75))
                 ax.text(panel.polygon.centroid.x,
-                        panel.polygon.centroid.y, panel.GCL, color='white')
+                        panel.polygon.centroid.y, panel.gcl, color='white')
+        if vortex_zones:
+            for zone in vortex_zones:
+                ax.add_artist(PolygonPatch(
+                    vortex_zones[zone], fill=False, linestyle='dotted', color='white'))
+                ax.text(vortex_zones[zone].centroid.x,
+                        vortex_zones[zone].centroid.y, zone, color='white')
         plt.show()
     return ax
 
@@ -103,6 +109,7 @@ def main():
     building = builder.build_polygons(building_coordinates)
     zones = builder.calculate_zones(building, Lb=building_height)
     # array = panels.build_arrays(zones=zones, Lb=building_height, csv_coordinates=coords,
+    vortex_zones = builder.calculate_vortex_zones(building)
     #                             module_width=4, module_length=2, gap_length=0)
     # array = panels.build_arrays(zones=zones, Lb=building_height, module_width=4, module_length=2, gap_length=1, rows=4,
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
@@ -110,13 +117,13 @@ def main():
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
     # for panel in array:
     #     print(panel.identity, panel.pressure, panel.GCL)
-    # graph_polygons(
-    #     building=building, zones=zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
+    graph_polygons(
+        building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
     #             intersections[zone][panel]) + ' sqft.')
-    panels.calculate_forces()
+    # panels.calculate_forces()
     # ---debugging---
     # array, north_ray, south_ray, east_ray, west_ray = Polygons.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
     #                                                                         columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
