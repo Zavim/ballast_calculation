@@ -1,4 +1,3 @@
-from numpy.core.numeric import identity
 from scipy import interpolate
 from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
@@ -102,7 +101,6 @@ def check_neighbors(array, panel_tree, module_width, module_length):
 
 
 def calculate_panel_zones(array, zones):
-    intersections = {}
     panel_zones = {}
     for panel in array:
         for zone in iter(zones):
@@ -205,7 +203,7 @@ def calculate_GCL(array, Lb, graph_type=None):
         panel.An = An
 
 
-def calculate_forces(building_height=33, elevation=2500, wind_speed=100):
+def calculate_forces(building_length=0, building_width=0, building_height=0, elevation=2500, wind_speed=100):
     z = building_height
     Zg = 900
     alpha = 10
@@ -225,10 +223,11 @@ def calculate_forces(building_height=33, elevation=2500, wind_speed=100):
     Lb = min(z, 0.4 * (w * z) ** 1/2)
     An = 1000*Atrib/Lb ** 2
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
+    W = max(building_length, building_width)
     if (Ph / Lb > .2):
         gammaP = 1.12
     else:
         gammaP = .88+1.2 * (Ph / Lb)
     parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
-                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph}
+                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W}
     output.write_to_csv(parameter_dict)
