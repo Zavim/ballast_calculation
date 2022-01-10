@@ -6,12 +6,14 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length, polygon, panel_class=None, An=0, zones={}, gcl=0, pressure=0):
+    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, gcl=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
         self.polygon = polygon
         self.panel_class = panel_class
+        self.Aref = Aref
+        self.Atrib = Atrib
         self.An = An
         self.zones = zones
         self.gcl = gcl
@@ -110,7 +112,7 @@ def calculate_panel_zones(array, zones):
                     zones[zone].buffer(0)))
                 if intersection.area > 0.0:
                     if zone not in panel_zones:
-                        panel_zones[zone] = intersection.area
+                        panel_zones[zone] = round(intersection.area, 5)
                         panel.zones = panel_zones
         panel_zones = {}
     # intersections[panel.identity] = intersection.area
@@ -139,10 +141,10 @@ def extrapolate(x_dict, y_dict, value):
     return extrapolator(value)
 
 
-def calculate_GCL(array, Lb, graph_type=None):
-    # Aref = 18
-    Aref = 21  # ANISA
+def calculate_GCL(array, Lb):
+    Aref = array[0].length * array[0].width
     # Aref == panel area
+    # Aref = 21  # ANISA
     Atrib = Aref * 1
     # tributary area == Aref * load share factor
     An = Atrib/(Lb**2)*1000
@@ -199,11 +201,13 @@ def calculate_GCL(array, Lb, graph_type=None):
                 panel.gcl = round(panel.gcl.tolist(), 3)
                 # if lookup <
         # if panel.gcl*qz > panel.pressure:
+        panel.Aref = Aref
+        panel.Atrib = Atrib
         panel.pressure = panel.gcl*qz
         panel.An = An
 
 
-def calculate_forces(building_length=0, building_width=0, building_height=0, elevation=2500, wind_speed=100):
+def calculate_forces(array=None, building_length=0, building_width=0, building_height=0, elevation=2500, wind_speed=100):
     z = building_height
     Zg = 900
     alpha = 10
@@ -230,4 +234,4 @@ def calculate_forces(building_length=0, building_width=0, building_height=0, ele
         gammaP = .88+1.2 * (Ph / Lb)
     parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
                       'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W}
-    output.write_to_csv(parameter_dict)
+    output.write_to_csv(parameter_dict, array)

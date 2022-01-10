@@ -117,7 +117,7 @@ def main():
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
     array = panels.build_arrays(zones=zones, Lb=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
-    panels.calculate_forces(building_length=building_length,
+    panels.calculate_forces(array=array, building_length=building_length,
                             building_width=building_width, building_height=building_height)
     # for panel in array:
     #     print(panel.identity, panel.pressure, panel.GCL)
