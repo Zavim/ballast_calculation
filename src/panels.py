@@ -6,7 +6,7 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, gcl=0, pressure=0):
+    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -16,11 +16,12 @@ class Panel:
         self.Atrib = Atrib
         self.An = An
         self.zones = zones
+        self.vortex_zones = vortex_zones
         self.gcl = gcl
         self.pressure = pressure
 
 
-def build_arrays(zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
+def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
     panel_list = []
     panel_tree = []
@@ -54,6 +55,7 @@ def build_arrays(zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, modu
     check_neighbors(
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
+    calculate_vortex_zones(array, vortex_zones)
     calculate_GCL(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
@@ -121,12 +123,38 @@ def calculate_panel_zones(array, zones):
     # return zone_intersections
 
 
+def calculate_vortex_zones(array, vortex_zones):
+    panel_vortex_zones = {}
+    for panel in array:
+        for vortex_zone in iter(vortex_zones):
+            intersects = panel.polygon.intersects(vortex_zones[vortex_zone])
+            if intersects:
+                intersection = (panel.polygon.intersection(
+                    vortex_zones[vortex_zone].buffer(0)))
+                if intersection.area > 0.0:
+                    if vortex_zone not in panel_vortex_zones:
+                        panel_vortex_zones[vortex_zone] = round(
+                            intersection.area, 5)
+                        panel.vortex_zones = panel_vortex_zones
+        panel_vortex_zones = {}
+
+
 def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighbor_w=False):
     panel_value = bool(neighbor_w)*(2**0)+bool(neighbor_e) * \
         (2**1)+bool(neighbor_s)*(2**2)+bool(neighbor_n)*(2**3)
-    panel_class = 'inside' if panel_value == 15 else 'edge'
-    if (panel_value == 0 or panel_value == 5 or panel_value == 6 or panel_value == 9 or panel_value == 10):
-        panel_class = 'corner'
+    panel_class_dict = {
+        0: 'single',
+        5: 'ne corner',
+        6: 'nw corner',
+        7: 'north edge',
+        9: 'se corner',
+        10: 'sw corner',
+        11: 'south edge',
+        13: 'east edge',
+        14: 'west edge',
+        15: 'interior'
+    }
+    panel_class = panel_class_dict[panel_value]
     return panel_class
 
 
