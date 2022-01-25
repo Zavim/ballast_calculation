@@ -54,15 +54,17 @@ def write_to_csv(parameter_dict, array):
         writer.writerow(['panel length', 'panel width', 'Aref'])
         writer.writerow(
             [array[0].length, array[0].width, array[0].Aref])
+        # all panels will have the same length, width, and area so this line just
+        # picks the first panel from the array to get these values
         writer.writerow([''])
-        writer.writerow(['panel index', 'panel coords',
-                        'zones', 'intersection area', 'An', 'GCL'])
+        writer.writerow(['panel index', 'panel coords', 'panel class',
+                        'zones', 'intersection area', 'vortex zones', 'An', 'GCL'])
 
         for panel in array:
             zones_after_rounding = []
             for zone in panel.zones:
                 zones_after_rounding.append(round(panel.zones[zone], 2))
             writer.writerow(
-                [panel.identity, list(panel.polygon.exterior.coords[:-1]), list(panel.zones.keys()), zones_after_rounding, round(panel.An, 2), round(panel.gcl, 2)])
+                [panel.identity, list(panel.polygon.exterior.coords[:-1]), panel.panel_class, list(panel.zones.keys()), zones_after_rounding, panel.vortex_zones, round(panel.An, 2), round(panel.gcl, 2)])
             zones_after_rounding = []
             # print(zones_after_rounding)

@@ -11,7 +11,7 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
         if preset == 'default':
             coordinates = [[0.0, 0.0], [0.0, 500.0],
                            [500.0, 500.0], [500.0, 0.0]]
-            building_height = 15.0
+            building_height = 20.0
             return coordinates, building_height
 
         if preset == 'alberta':
@@ -23,6 +23,12 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
         if preset == 'anisa':
             coordinates = [[0.0, 0.0], [0.0, 500.0],
                            [500.0, 500.0], [500.0, 0.0]]
+            building_height = 33.0
+            return coordinates, building_height
+
+        if preset == 'rect':
+            coordinates = [[0.0, 0.0], [0.0, 500.0],
+                           [1000.0, 500.0], [1000.0, 0.0]]
             building_height = 33.0
             return coordinates, building_height
 

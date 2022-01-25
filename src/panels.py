@@ -6,7 +6,7 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, pressure=0):
+    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0,gcs=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -18,6 +18,7 @@ class Panel:
         self.zones = zones
         self.vortex_zones = vortex_zones
         self.gcl = gcl
+        self.gcs = gcs
         self.pressure = pressure
 
 
@@ -56,7 +57,7 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
     calculate_vortex_zones(array, vortex_zones)
-    calculate_GCL(array, Lb)
+    calculate_lift_and_friction(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
@@ -158,7 +159,7 @@ def classify_panels(neighbor_n=False, neighbor_e=False, neighbor_s=False, neighb
     return panel_class
 
 
-def extrapolate(x_dict, y_dict, value):
+def extrapolate(x_dict, y_dict, lookup_value):
     x = []
     y = []
     for key in x_dict:
@@ -166,10 +167,10 @@ def extrapolate(x_dict, y_dict, value):
     for key in y_dict:
         y.append(y_dict[key])
     extrapolator = interpolate.interp1d(x, y, fill_value="extrapolate")
-    return extrapolator(value)
+    return extrapolator(lookup_value)
 
 
-def calculate_GCL(array, Lb):
+def calculate_lift_and_friction(array, Lb):
     Aref = array[0].length * array[0].width
     # Aref == panel area
     # Aref = 21  # ANISA
@@ -217,7 +218,7 @@ def calculate_GCL(array, Lb):
 
     qz = 19.9  # ANISA
     for panel in array:
-        for zone in panel.zones:
+        for zone in panel.zones:          
             if zone == 'D':
                 panel.gcl = extrapolate(
                     d_graph['modules'], d_graph['lift'], An)
@@ -227,8 +228,11 @@ def calculate_GCL(array, Lb):
                 panel.gcl = extrapolate(
                     lift_graph['An'], lift_graph[zone[1:]], An)
                 panel.gcl = round(panel.gcl.tolist(), 3)
-                # if lookup <
-        # if panel.gcl*qz > panel.pressure:
+            
+            panel.gcs = extrapolate(
+                mu5_graph['An'], mu5_graph[zone[1:]], An)
+            panel.gcs=round(panel.gcs.tolist(), 3)
+
         panel.Aref = Aref
         panel.Atrib = Atrib
         panel.pressure = panel.gcl*qz
@@ -243,7 +247,7 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
     Kd = .85
     Ke = math.e ** (-.0000362 * elevation)
     v = wind_speed
-    w = 495  # maybe or MAYBE 528
+    w = building_width  # maybe or MAYBE 528
     # 435,466 is bottom left of A1 array
     Aref = 21
     Ph = 3
