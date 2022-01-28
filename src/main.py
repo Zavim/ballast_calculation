@@ -76,13 +76,13 @@ def graph_polygons(building=None, zones=None, vortex_zones=None, array=None, max
     if show:
         if building:
             ax.add_artist(PolygonPatch(building, alpha=.25))
-        # if zones:
-        #     for zone in zones:
-        #         ax.add_artist(PolygonPatch(
-        #             zones[zone], facecolor=colors[zone], alpha=.5))
-        #         ax.text(zones[zone].centroid.x,
-        #                 zones[zone].centroid.y, zone)
-        #         # centroid represents the center of the polygon
+        if zones:
+            for zone in zones:
+                ax.add_artist(PolygonPatch(
+                    zones[zone], facecolor=colors[zone], alpha=.5))
+                ax.text(zones[zone].centroid.x,
+                        zones[zone].centroid.y, zone)
+                # centroid represents the center of the polygon
         if array:
             for panel in array:
                 ax.add_artist(PolygonPatch(
@@ -117,10 +117,10 @@ def main():
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
     array = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, Lb=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
-    panels.calculate_forces(array=array, building_length=building_length,
-                            building_width=building_width, building_height=building_height)
-    # graph_polygons(
-    #     building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
+    # panels.calculate_forces(array=array, building_length=building_length,
+    #                         building_width=building_width, building_height=building_height, generateReport=True)
+    panels.generateReport(report=True, array=array, building_length=building_length,
+                          building_width=building_width, building_height=building_height)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(

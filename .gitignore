@@ -4,4 +4,4 @@
 src/__pycache__/
 references/Ballast calculation parameters.xlsx
 references/.~lock.Ballast calculation parameters.xlsx#
-output.csv
+*.csv

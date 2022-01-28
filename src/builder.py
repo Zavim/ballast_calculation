@@ -37,15 +37,6 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
     return coordinates
 
 
-def temp_calculate_gamma_p(parapet_height, Lb=0):
-    if parapet_height/Lb > .2:
-        gamma_p = 1.12
-    elif parapet_height/Lb < .2:
-        gamma_p = .88+(1.2*parapet_height/Lb)
-    else:
-        print('parapet height is equal to .2')
-
-
 def calculate_vortex_zones(building):
     BX1 = building.bounds[0]
     BY1 = building.bounds[1]

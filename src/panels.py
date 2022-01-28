@@ -6,7 +6,7 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0,gcs=0, pressure=0):
+    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, gcs=0, pressure=0):
         self.identity = identity
         self.width = width
         self.length = length
@@ -26,16 +26,15 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
     array = []
     panel_list = []
     panel_tree = []
-    panel_count = 1
+    panel_count = []
     if csv_coordinates:
         for pair in csv_coordinates:
             panel_origin = dict(x=pair[0], y=pair[1])
             panel_coordinates = [[panel_origin['x'] + (module_width), panel_origin['y']+(module_length)], [panel_origin['x'] + (module_width), panel_origin['y']+module_length + (module_length)],
                                  [panel_origin['x'] + module_width + (module_width), panel_origin['y']+module_length + (module_length)], [panel_origin['x'] + module_width + (module_width), panel_origin['y']+(module_length)]]
-            panel = Panel(identity=panel_count, width=module_width,
+            panel = Panel(identity=None, width=module_width,
                           length=module_length, polygon=Polygon(panel_coordinates))
             array.append(panel)
-            panel_count += 1
     else:
         margin_left = LineString([[distance_left, max_y], [distance_left, 0]])
         margin_bottom = LineString(
@@ -44,12 +43,13 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
         for row in range(rows):
             gap = gap_length if row >= 1 else 0
             for column in range(columns):
+                panel_count = [row, column]
                 panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
                                      [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
                 panel = Panel(identity=panel_count, width=module_width,
                               length=module_length, polygon=Polygon(panel_coordinates))
                 array.append(panel)
-                panel_count += 1
+
     for panel in array:
         panel_list.append(panel.polygon)
     panel_tree = STRtree(panel_list)
@@ -57,6 +57,7 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
     calculate_vortex_zones(array, vortex_zones)
+
     calculate_lift_and_friction(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
@@ -218,7 +219,7 @@ def calculate_lift_and_friction(array, Lb):
 
     qz = 19.9  # ANISA
     for panel in array:
-        for zone in panel.zones:          
+        for zone in panel.zones:
             if zone == 'D':
                 panel.gcl = extrapolate(
                     d_graph['modules'], d_graph['lift'], An)
@@ -228,10 +229,10 @@ def calculate_lift_and_friction(array, Lb):
                 panel.gcl = extrapolate(
                     lift_graph['An'], lift_graph[zone[1:]], An)
                 panel.gcl = round(panel.gcl.tolist(), 3)
-            
+
             panel.gcs = extrapolate(
                 mu5_graph['An'], mu5_graph[zone[1:]], An)
-            panel.gcs=round(panel.gcs.tolist(), 3)
+            panel.gcs = round(panel.gcs.tolist(), 3)
 
         panel.Aref = Aref
         panel.Atrib = Atrib
@@ -250,7 +251,8 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
     w = building_width  # maybe or MAYBE 528
     # 435,466 is bottom left of A1 array
     Aref = 21
-    Ph = 3
+    h2 = .8
+    Ph = 4
     Atrib = Aref*1
     if (z < Zg and z > 15):
         Kz = 2.01 * (z/Zg) ** (2/alpha)
@@ -260,10 +262,17 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
     An = 1000*Atrib/Lb ** 2
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
     W = max(building_length, building_width)
-    if (Ph / Lb > .2):
+    if (Ph / Lb >= .2):
         gammaP = 1.12
     else:
-        gammaP = .88+1.2 * (Ph / Lb)
+        gammaP = .88+(1.2 * (Ph / Lb))
     parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
-                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W}
+                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W, 'h2': h2}
+    return parameter_dict
+
+
+def generateReport(report=False, array=None, building_length=None,
+                   building_width=None, building_height=None):
+    parameter_dict = calculate_forces(array=array, building_length=building_length,
+                                      building_width=building_width, building_height=building_height)
     output.write_to_csv(parameter_dict, array)
