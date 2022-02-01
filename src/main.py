@@ -105,7 +105,7 @@ def main():
     # building_coordinates = builder.calculate_building_coordinates(
     #     building_width=building_width, building_length=building_length, building_height=building_height)
     building_coordinates, building_height = builder.calculate_building_coordinates(
-        preset='default')
+        preset='alberta')
     building_length = building_coordinates[2][0]
     building_width = building_coordinates[2][1]
     building = builder.build_polygons(building_coordinates)
@@ -121,6 +121,8 @@ def main():
     #                         building_width=building_width, building_height=building_height, generateReport=True)
     panels.generateReport(report=True, array=array, building_length=building_length,
                           building_width=building_width, building_height=building_height)
+    graph_polygons(
+        building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(

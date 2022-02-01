@@ -2,6 +2,7 @@
 /Pipfile.lock
 /tasks.json
 src/__pycache__/
-references/Ballast calculation parameters.xlsx
-references/.~lock.Ballast calculation parameters.xlsx#
+references/
+output/
+csv/
 *.csv

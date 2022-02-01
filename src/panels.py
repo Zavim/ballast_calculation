@@ -6,8 +6,8 @@ import output
 
 
 class Panel:
-    def __init__(self,  identity, width, length,  polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, gcs=0, pressure=0):
-        self.identity = identity
+    def __init__(self,  index, width, length, polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, gcs=0, gamma_e=1, pressure=0):
+        self.index = index
         self.width = width
         self.length = length
         self.polygon = polygon
@@ -19,6 +19,7 @@ class Panel:
         self.vortex_zones = vortex_zones
         self.gcl = gcl
         self.gcs = gcs
+        self.gamma_e = gamma_e
         self.pressure = pressure
 
 
@@ -32,7 +33,7 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
             panel_origin = dict(x=pair[0], y=pair[1])
             panel_coordinates = [[panel_origin['x'] + (module_width), panel_origin['y']+(module_length)], [panel_origin['x'] + (module_width), panel_origin['y']+module_length + (module_length)],
                                  [panel_origin['x'] + module_width + (module_width), panel_origin['y']+module_length + (module_length)], [panel_origin['x'] + module_width + (module_width), panel_origin['y']+(module_length)]]
-            panel = Panel(identity=None, width=module_width,
+            panel = Panel(index=None, width=module_width,
                           length=module_length, polygon=Polygon(panel_coordinates))
             array.append(panel)
     else:
@@ -46,7 +47,7 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
                 panel_count = [row, column]
                 panel_coordinates = [[array_origin.x + (column*module_width), array_origin.y+(row*module_length)+(row*gap)], [array_origin.x + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)],
                                      [array_origin.x + module_width + (column*module_width), array_origin.y+module_length + (row*module_length)+(row*gap)], [array_origin.x + module_width + (column*module_width), array_origin.y+(row*module_length)+(row*gap)]]
-                panel = Panel(identity=panel_count, width=module_width,
+                panel = Panel(index=panel_count, width=module_width,
                               length=module_length, polygon=Polygon(panel_coordinates))
                 array.append(panel)
 
@@ -57,7 +58,7 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
     calculate_vortex_zones(array, vortex_zones)
-
+    calculate_edge_factors(array)
     calculate_lift_and_friction(array, Lb)
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
@@ -119,7 +120,7 @@ def calculate_panel_zones(array, zones):
                         panel_zones[zone] = round(intersection.area, 5)
                         panel.zones = panel_zones
         panel_zones = {}
-    # intersections[panel.identity] = intersection.area
+    # intersections[panel.index] = intersection.area
     # zone_intersections[zone] = dict(intersections)
     # print(intersections)
     # return zone_intersections
@@ -230,14 +231,106 @@ def calculate_lift_and_friction(array, Lb):
                     lift_graph['An'], lift_graph[zone[1:]], An)
                 panel.gcl = round(panel.gcl.tolist(), 3)
 
-            panel.gcs = extrapolate(
-                mu5_graph['An'], mu5_graph[zone[1:]], An)
+            if zone == 'D':
+                panel.gcs = extrapolate(
+                    d_graph['modules'], d_graph['mu5'], An)
+            else:
+                panel.gcs = extrapolate(
+                    mu5_graph['An'], mu5_graph[zone[1:]], An)
             panel.gcs = round(panel.gcs.tolist(), 3)
 
         panel.Aref = Aref
         panel.Atrib = Atrib
         panel.pressure = panel.gcl*qz
         panel.An = An
+
+
+def calculate_edge_factors(array):
+    lift_graph = {'A1': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.0},
+                  'B': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.0},
+                  'A2': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.3},
+                  'C': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.9},
+                  'D': {'north edge': 1.0, 'south edge': 1.5, 'east/west edge': 1.6},
+                  'E': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.1},
+                  'F1': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.9},
+                  'F2': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.9},
+                  'G1': {'north edge': 1.0, 'south edge': 1.5, 'east/west edge': 1.3},
+                  'G2': {'north edge': 1.0, 'south edge': 1.9, 'east/west edge': 1.3}}
+
+    sliding_graph = {'A1': {'north edge': 1.2, 'south edge': 1.0, 'east/west edge': 1.0},
+                     'B': {'north edge': 1.2, 'south edge': 1.0, 'east/west edge': 1.0},
+                     'A2': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.2},
+                     'C': {'north edge': 1.5, 'south edge': 1.0, 'east/west edge': 1.9},
+                     'D': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.4},
+                     'E': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.1},
+                     'F1': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.7},
+                     'F2': {'north edge': 1.0, 'south edge': 1.0, 'east/west edge': 1.7},
+                     'G1': {'north edge': 1.0, 'south edge': 1.3, 'east/west edge': 1.2},
+                     'G2': {'north edge': 1.0, 'south edge': 2.0, 'east/west edge': 1.3}}
+
+    for panel in array:
+        if panel.panel_class == 'interior':
+            continue
+
+        if panel.panel_class == 'ne corner' or panel.panel_class == 'nw corner':
+            for zone in panel.zones:
+                if len(zone) <= 1:
+                    temp_gamma_e = max(
+                        lift_graph[zone]['south edge'], lift_graph[zone]['east/west edge'])
+                    # since we must slice the first char of the zone string eg. 3B -> B,
+                    # we have to account for zones that are one character long eg. 'D'
+                else:
+                    temp_gamma_e = max(
+                        lift_graph[zone[1:]]['north edge'], lift_graph[zone[1:]]['east/west edge'])
+                if (temp_gamma_e > panel.gamma_e):
+                    panel.gamma_e = temp_gamma_e
+                    temp_gamma_e = 0
+
+        if panel.panel_class == 'se corner' or panel.panel_class == 'sw corner':
+            for zone in panel.zones:
+                if len(zone) <= 1:
+                    temp_gamma_e = max(
+                        lift_graph[zone]['south edge'], lift_graph[zone]['east/west edge'])
+                else:
+                    temp_gamma_e = max(
+                        lift_graph[zone[1:]]['south edge'], lift_graph[zone[1:]]['east/west edge'])
+                if (temp_gamma_e > panel.gamma_e):
+                    panel.gamma_e = temp_gamma_e
+                    temp_gamma_e = 0
+
+        else:
+            if panel.panel_class == 'east edge' or panel.panel_class == 'west edge':
+                for zone in panel.zones:
+                    if zone == 'D':
+                        temp_gamma_e = lift_graph['D']['east/west edge']
+                    if zone == 'E':
+                        temp_gamma_e = lift_graph['E']['east/west edge']
+
+                    if (temp_gamma_e > panel.gamma_e):
+                        panel.gamma_e = temp_gamma_e
+                        temp_gamma_e = 0
+
+            if panel.panel_class == 'south edge':
+                for zone in panel.zones:
+                    if zone == 'D':
+                        temp_gamma_e = lift_graph['D']['south edge']
+                    if zone == 'E':
+                        temp_gamma_e = lift_graph['E']['south edge']
+
+                    if (temp_gamma_e > panel.gamma_e):
+                        panel.gamma_e = temp_gamma_e
+                        temp_gamma_e = 0
+
+            if panel.panel_class == 'north edge':
+                for zone in panel.zones:
+                    if zone == 'D':
+                        temp_gamma_e = lift_graph['D']['north edge']
+                    if zone == 'E':
+                        temp_gamma_e = lift_graph['E']['north edge']
+
+                    if (temp_gamma_e > panel.gamma_e):
+                        panel.gamma_e = temp_gamma_e
+                        temp_gamma_e = 0
 
 
 def calculate_forces(array=None, building_length=0, building_width=0, building_height=0, elevation=2500, wind_speed=100):
@@ -275,4 +368,5 @@ def generateReport(report=False, array=None, building_length=None,
                    building_width=None, building_height=None):
     parameter_dict = calculate_forces(array=array, building_length=building_length,
                                       building_width=building_width, building_height=building_height)
-    output.write_to_csv(parameter_dict, array)
+    if report:
+        output.write_to_csv(parameter_dict, array)

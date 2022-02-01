@@ -49,15 +49,15 @@ def write_to_csv(parameter_dict, array):
         writer.writerow([''])
         writer.writerow(['array rows', 'array columns'])
         writer.writerow([''])
-        writer.writerow([array[-1].identity[0]+1, array[-1].identity[1]+1])
+        writer.writerow([array[-1].index[0]+1, array[-1].index[1]+1])
         writer.writerow([''])
         writer.writerow(['panel index', 'panel coords', 'panel class',
-                        'zones', 'intersection area', 'vortex zones', 'An', 'GCL', 'GCS'])
+                        'zones', 'intersection area', 'vortex zones', 'An', 'GCL', 'GCS', 'gamma_e'])
 
         for panel in array:
             zones_after_rounding = []
             for zone in panel.zones:
                 zones_after_rounding.append(round(panel.zones[zone], 2))
             writer.writerow(
-                [panel.identity, list(panel.polygon.exterior.coords[:-1]), panel.panel_class, list(panel.zones.keys()), zones_after_rounding, panel.vortex_zones, round(panel.An, 2), round(panel.gcl, 2), round(panel.gcs, 2)])
+                [panel.index, list(panel.polygon.exterior.coords[:-1]), panel.panel_class, list(panel.zones.keys()), zones_after_rounding, panel.vortex_zones, round(panel.An, 2), round(panel.gcl, 2), round(panel.gcs, 2), round(panel.gamma_e, 2)])
             zones_after_rounding = []
