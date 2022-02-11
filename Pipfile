@@ -13,6 +13,7 @@ scipy = "*"
 [dev-packages]
 yapf = "*"
 autopep8 = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3.9"

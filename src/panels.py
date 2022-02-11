@@ -134,11 +134,10 @@ def calculate_vortex_zones(array, vortex_zones):
             if intersects:
                 intersection = (panel.polygon.intersection(
                     vortex_zones[vortex_zone].buffer(0)))
-                if intersection.area > 0.0:
-                    if vortex_zone not in panel_vortex_zones:
-                        panel_vortex_zones[vortex_zone] = round(
-                            intersection.area, 5)
-                        panel.vortex_zones = panel_vortex_zones
+                if intersection.area > 0.0 and vortex_zone not in panel_vortex_zones:
+                    panel_vortex_zones[vortex_zone] = round(
+                        intersection.area, 5)
+                    panel.vortex_zones = panel_vortex_zones
         panel_vortex_zones = {}
 
 
@@ -239,8 +238,6 @@ def calculate_lift_and_friction(array, Lb):
                     mu5_graph['An'], mu5_graph[zone[1:]], An)
             panel.gcs = round(panel.gcs.tolist(), 3)
 
-        panel.Aref = Aref
-        panel.Atrib = Atrib
         panel.pressure = panel.gcl*qz
         panel.An = An
 
@@ -305,6 +302,7 @@ def calculate_edge_factors(array):
                         temp_gamma_e = lift_graph['D']['east/west edge']
                     if zone == 'E':
                         temp_gamma_e = lift_graph['E']['east/west edge']
+                    # if zone[1:] == 'A1':
 
                     if (temp_gamma_e > panel.gamma_e):
                         panel.gamma_e = temp_gamma_e
