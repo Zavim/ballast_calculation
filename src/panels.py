@@ -6,13 +6,12 @@ import output
 
 
 class Panel:
-    def __init__(self,  index, width, length, polygon, panel_class=None, Aref=0, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, gcs=0, gamma_e=1, pressure=0):
+    def __init__(self,  index, width, length, polygon, panel_class=None, Atrib=0, An=0, zones={}, vortex_zones={}, gcl=0, gcs=0, gamma_e=1, pressure=0):
         self.index = index
         self.width = width
         self.length = length
         self.polygon = polygon
         self.panel_class = panel_class
-        self.Aref = Aref
         self.Atrib = Atrib
         self.An = An
         self.zones = zones
@@ -23,11 +22,21 @@ class Panel:
         self.pressure = pressure
 
 
-def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
+def build_arrays(zones=None, vortex_zones=None, building_length=0, building_width=0, building_height=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
     array = []
     panel_list = []
     panel_tree = []
     panel_count = []
+    parameter_dict = {}
+    W = max(building_length, building_width)
+    z = building_height
+    Lb = min(z, 0.4 * (W * z) ** 1/2)
+    parameter_dict['W'] = W
+    parameter_dict['w'] = building_width
+    parameter_dict['l'] = building_length
+    parameter_dict['z'] = z
+    parameter_dict['Lb'] = Lb
+
     if csv_coordinates:
         for pair in csv_coordinates:
             panel_origin = dict(x=pair[0], y=pair[1])
@@ -60,6 +69,10 @@ def build_arrays(zones=None, vortex_zones=None, Lb=0, csv_coordinates=None, rows
     calculate_vortex_zones(array, vortex_zones)
     calculate_edge_factors(array)
     calculate_lift_and_friction(array, Lb)
+    calculate_forces(array=array, building_length=building_length,
+                     building_width=building_width, building_height=building_height, Lb=Lb, parameter_dict=parameter_dict)
+    generateReport(report=True, array=array, parameter_dict=parameter_dict)
+
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
@@ -175,9 +188,7 @@ def calculate_lift_and_friction(array, Lb):
     Aref = array[0].length * array[0].width
     # Aref == panel area
     # Aref = 21  # ANISA
-    Atrib = Aref * 1
     # tributary area == Aref * load share factor
-    An = Atrib/(Lb**2)*1000
     lift_graph = {'An': {1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60, 7: 70, 8: 80, 9: 90, 10: 100, 11: 200, 12: 300, 13: 400, 14: 500, 15: 600, 16: 700, 17: 800, 18: 900, 19: 1000, 20: 2000},
                   'A1': {1: -0.72, 2: -0.59, 3: -0.51, 4: -0.46, 5: -0.42, 6: -0.38, 7: -0.35, 8: -0.33, 9: -0.3, 10: -0.29, 11: -0.19, 12: -0.14, 13: -0.12, 14: -0.1, 15: -0.09, 16: -0.08, 17: -0.07, 18: -0.06, 19: -0.05, 20: -0.04},
                   'A2': {1: -0.67, 2: -0.54, 3: -0.47, 4: -0.42, 5: -0.38, 6: -0.35, 7: -0.32, 8: -0.29, 9: -0.27, 10: -0.25, 11: -0.16, 12: -0.11, 13: -0.09, 14: -0.08, 15: -0.07, 16: -0.06, 17: -0.05, 18: -0.04, 19: -0.03, 20: -.02},
@@ -219,27 +230,27 @@ def calculate_lift_and_friction(array, Lb):
 
     qz = 19.9  # ANISA
     for panel in array:
+        panel.An = (panel.Atrib/Lb**2)*1000
         for zone in panel.zones:
             if zone == 'D':
                 panel.gcl = extrapolate(
-                    d_graph['modules'], d_graph['lift'], An)
+                    d_graph['modules'], d_graph['lift'], panel.An)
                 panel.gcl = round(panel.gcl.tolist(), 3)
                 # to list is needed because panel.gcl is a numpy array due to the extrapolate function
             else:
                 panel.gcl = extrapolate(
-                    lift_graph['An'], lift_graph[zone[1:]], An)
+                    lift_graph['An'], lift_graph[zone[1:]], panel.An)
                 panel.gcl = round(panel.gcl.tolist(), 3)
 
             if zone == 'D':
                 panel.gcs = extrapolate(
-                    d_graph['modules'], d_graph['mu5'], An)
+                    d_graph['modules'], d_graph['mu5'], panel.An)
             else:
                 panel.gcs = extrapolate(
-                    mu5_graph['An'], mu5_graph[zone[1:]], An)
+                    mu5_graph['An'], mu5_graph[zone[1:]], panel.An)
             panel.gcs = round(panel.gcs.tolist(), 3)
 
         panel.pressure = panel.gcl*qz
-        panel.An = An
 
 
 def calculate_edge_factors(array):
@@ -265,15 +276,23 @@ def calculate_edge_factors(array):
                      'G1': {'north edge': 1.0, 'south edge': 1.3, 'east/west edge': 1.2},
                      'G2': {'north edge': 1.0, 'south edge': 2.0, 'east/west edge': 1.3}}
 
+    load_share_factors = {'corner': 3, 'edge': 3, 'interior': 6}
+    Aref = array[0].width*array[0].length
+
     for panel in array:
         if panel.panel_class == 'interior':
+            panel.Atrib = Aref*load_share_factors['interior']
             continue
 
         if panel.panel_class == 'ne corner' or panel.panel_class == 'nw corner':
+            panel.Atrib = Aref*load_share_factors['corner']
             for zone in panel.zones:
-                if len(zone) <= 1:
+                if zone == 'D':
                     temp_gamma_e = max(
                         lift_graph[zone]['south edge'], lift_graph[zone]['east/west edge'])
+                # if len(zone) <= 1:
+                #     temp_gamma_e = max(
+                #         lift_graph[zone]['south edge'], lift_graph[zone]['east/west edge'])
                     # since we must slice the first char of the zone string eg. 3B -> B,
                     # we have to account for zones that are one character long eg. 'D'
                 else:
@@ -281,11 +300,11 @@ def calculate_edge_factors(array):
                         lift_graph[zone[1:]]['north edge'], lift_graph[zone[1:]]['east/west edge'])
                 if (temp_gamma_e > panel.gamma_e):
                     panel.gamma_e = temp_gamma_e
-                    temp_gamma_e = 0
 
         if panel.panel_class == 'se corner' or panel.panel_class == 'sw corner':
+            panel.Atrib = Aref*load_share_factors['corner']
             for zone in panel.zones:
-                if len(zone) <= 1:
+                if zone == 'D':
                     temp_gamma_e = max(
                         lift_graph[zone]['south edge'], lift_graph[zone]['east/west edge'])
                 else:
@@ -293,45 +312,81 @@ def calculate_edge_factors(array):
                         lift_graph[zone[1:]]['south edge'], lift_graph[zone[1:]]['east/west edge'])
                 if (temp_gamma_e > panel.gamma_e):
                     panel.gamma_e = temp_gamma_e
-                    temp_gamma_e = 0
 
         else:
+            panel.Atrib = Aref*load_share_factors['edge']
+            vortex_picker(panel, lift_graph)
+        # else:
+        #     if panel.panel_class == 'east edge' or panel.panel_class == 'west edge':
+        #         for zone in panel.zones:
+        #             if zone == 'D':
+        #                 temp_gamma_e = lift_graph['D']['east/west edge']
+        #             if zone == 'E':
+        #                 temp_gamma_e = lift_graph['E']['east/west edge']
+        #             # if zone[1:] == 'A1':
+
+        #             if (temp_gamma_e > panel.gamma_e):
+        #                 panel.gamma_e = temp_gamma_e
+        #                 temp_gamma_e = 0
+
+        #     if panel.panel_class == 'south edge':
+        #         for zone in panel.zones:
+        #             if zone == 'D':
+        #                 temp_gamma_e = lift_graph['D']['south edge']
+        #             if zone == 'E':
+        #                 temp_gamma_e = lift_graph['E']['south edge']
+
+        #             if (temp_gamma_e > panel.gamma_e):
+        #                 panel.gamma_e = temp_gamma_e
+        #                 temp_gamma_e = 0
+
+        #     if panel.panel_class == 'north edge':
+        #         for zone in panel.zones:
+        #             if zone == 'D':
+        #                 temp_gamma_e = lift_graph['D']['north edge']
+        #             if zone == 'E':
+        #                 temp_gamma_e = lift_graph['E']['north edge']
+
+        #             if (temp_gamma_e > panel.gamma_e):
+        #                 panel.gamma_e = temp_gamma_e
+        #                 temp_gamma_e = 0
+
+
+def vortex_picker(panel, lift_graph):
+    for zone in panel.zones:
+        if zone == 'D' or zone == 'E':
             if panel.panel_class == 'east edge' or panel.panel_class == 'west edge':
-                for zone in panel.zones:
-                    if zone == 'D':
-                        temp_gamma_e = lift_graph['D']['east/west edge']
-                    if zone == 'E':
-                        temp_gamma_e = lift_graph['E']['east/west edge']
-                    # if zone[1:] == 'A1':
+                temp_gamma_e == lift_graph[zone]['east/west edge']
+            else:
+                temp_gamma_e == lift_graph[zone][panel.panel_class]
 
-                    if (temp_gamma_e > panel.gamma_e):
-                        panel.gamma_e = temp_gamma_e
-                        temp_gamma_e = 0
+            if temp_gamma_e > panel.gamma_e:
+                panel.gamma_e = temp_gamma_e
 
-            if panel.panel_class == 'south edge':
-                for zone in panel.zones:
-                    if zone == 'D':
-                        temp_gamma_e = lift_graph['D']['south edge']
-                    if zone == 'E':
-                        temp_gamma_e = lift_graph['E']['south edge']
+        else:
+            for vortex_zone in panel.vortex_zones:
+                if vortex_zone == 'VNE-E':
+                    temp_gamma_e = lift_graph[zone[1:]]['east/west edge']
+                if vortex_zone == 'VNE-N':
+                    temp_gamma_e = lift_graph[zone[1:]]['north edge']
+                if vortex_zone == 'VSE-E':
+                    temp_gamma_e = lift_graph[zone[1:]]['east/west edge']
+                if vortex_zone == 'VSE-S':
+                    temp_gamma_e = lift_graph[zone[1:]]['south edge']
+                if vortex_zone == 'VNW-W':
+                    temp_gamma_e = lift_graph[zone[1:]]['east/west edge']
+                if vortex_zone == 'VNW-N':
+                    temp_gamma_e = lift_graph[zone[1:]]['north edge']
+                if vortex_zone == 'VSW-W':
+                    temp_gamma_e = lift_graph[zone[1:]]['east/west edge']
+                if vortex_zone == 'VSW-S':
+                    temp_gamma_e = lift_graph[zone[1:]]['south edge']
 
-                    if (temp_gamma_e > panel.gamma_e):
-                        panel.gamma_e = temp_gamma_e
-                        temp_gamma_e = 0
-
-            if panel.panel_class == 'north edge':
-                for zone in panel.zones:
-                    if zone == 'D':
-                        temp_gamma_e = lift_graph['D']['north edge']
-                    if zone == 'E':
-                        temp_gamma_e = lift_graph['E']['north edge']
-
-                    if (temp_gamma_e > panel.gamma_e):
-                        panel.gamma_e = temp_gamma_e
-                        temp_gamma_e = 0
+                if temp_gamma_e > panel.gamma_e:
+                    panel.gamma_e = temp_gamma_e
 
 
-def calculate_forces(array=None, building_length=0, building_width=0, building_height=0, elevation=2500, wind_speed=100):
+def calculate_forces(array=None, building_length=0, building_width=0, building_height=0, Lb=0, parameter_dict=None, elevation=2500, wind_speed=100):
     z = building_height
     Zg = 900
     alpha = 10
@@ -339,32 +394,47 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
     Kd = .85
     Ke = math.e ** (-.0000362 * elevation)
     v = wind_speed
-    w = building_width  # maybe or MAYBE 528
+    # w = building_width  # maybe or MAYBE 528
     # 435,466 is bottom left of A1 array
-    Aref = 21
     h2 = .8
     Ph = 4
-    Atrib = Aref*1
     if (z < Zg and z > 15):
         Kz = 2.01 * (z/Zg) ** (2/alpha)
     else:
         print('building height does not fit parameters')
-    Lb = min(z, 0.4 * (w * z) ** 1/2)
-    An = 1000*Atrib/Lb ** 2
+
+    # Lb = min(z, 0.4 * (w * z) ** 1/2)
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
-    W = max(building_length, building_width)
+    # W = max(building_length, building_width)
     if (Ph / Lb >= .2):
         gammaP = 1.12
     else:
         gammaP = .88+(1.2 * (Ph / Lb))
-    parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
-                      'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'An': An, 'Atrib': Atrib, 'Lb': Lb, 'w': w, 'Aref': Aref, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W, 'h2': h2}
+
+    for panel in array:
+        panel.An = 1000*(panel.Atrib/Lb ** 2)
+
+    # parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
+    #                   'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'Lb': Lb, 'w': w, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W, 'h2': h2}
+    parameter_dict['qz'] = qz
+    parameter_dict['Kz'] = Kz
+    parameter_dict['building_height'] = building_height
+    parameter_dict['Zg'] = Zg
+    parameter_dict['alpha'] = alpha
+    parameter_dict['Kzt'] = Kzt
+    parameter_dict['Kd'] = Kd
+    parameter_dict['Ke'] = Ke
+    parameter_dict['elevation'] = elevation
+    parameter_dict['v'] = v
+    parameter_dict['gammaP'] = gammaP
+    parameter_dict['Ph'] = Ph
+    parameter_dict['h2'] = h2
     return parameter_dict
 
 
-def generateReport(report=False, array=None, building_length=None,
+def generateReport(report=False, parameter_dict=None, array=None, building_length=None,
                    building_width=None, building_height=None):
-    parameter_dict = calculate_forces(array=array, building_length=building_length,
-                                      building_width=building_width, building_height=building_height)
+    # parameter_dict = calculate_forces(array=array, building_length=building_length,
+    #                                   building_width=building_width, building_height=building_height)
     if report:
         output.write_to_csv(parameter_dict, array)
