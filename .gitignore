@@ -6,3 +6,4 @@ references/
 output/
 csv/
 *.csv
+report.yaml
