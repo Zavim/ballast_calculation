@@ -46,21 +46,13 @@ def calculate_vortex_zones(building):
     BY3 = building.bounds[3]
     BX4 = building.bounds[2]
     BY4 = building.bounds[1]
-#     vortex_formulas = {'VNE-E': {1: [BX1, BY1],
-#                                  2: [BX1, BY2], 3: [BX3, BY2], 4: [(BX3-BY2), BY1]},
-#                        'VNE-N': {1: [(BX3-BY2), BY1], 2: [BX3, BY2], 3: [BX3, BY1]},
-#                        'VNW-W': {1: [BX1, BY2], 2: [BX3, BY2], 3: [BX3, BY1], 4: [BY2, BX1]},
-#                        'VNW-N': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BX1]},
-#                        'VSW-W': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BY2]},
-#                        'VSE-E': {1: [BX1, BY1], 2: [BX1, BY2], 3: [(BX3-BY2), BY2], 4: [BX3, BY1]},
-#                        'VSE-S': {1: [(BX3-BY2), BY2], 2: [BX3, BY2], 3: [BX3, BY1]}}
 
     vortex_formulas = {
         'VNE-E': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BX3, BY2]},
         'VNE-N': {1: [(BX3-BY2), BY1], 2: [BX3, BY2], 3: [BX3, BY1]},
         'VNW-W': {1: [BX1, BY2], 2: [BX3, BY2], 3: [BX3, BY1]},
         'VNW-N': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BX1]},
-        'VSW-W': {1: [BX1, BY1], 2: [BX1, BY2], 3: [BY2, BY2]},
+        'VSW-W': {1: [BX1, BY1], 2: [BX1, BY2], 3: [(BX3-BY2), BY1]},
         'VSW-S': {1: [(BX3-BY2), BY1], 2: [BX3, BY2], 3: [BX3, BY1]},
         'VSE-E': {1: [BX1, BY1], 2: [BX1, BY2], 3: [(BX3-BY2), BY2]},
         'VSE-S': {1: [(BX3-BY2), BY2], 2: [BX3, BY2], 3: [BX3, BY1]}

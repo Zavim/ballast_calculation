@@ -1,5 +1,4 @@
 import csv
-import random
 import sys
 import matplotlib.pyplot as plt
 from descartes import PolygonPatch
@@ -96,7 +95,8 @@ def graph_polygons(building=None, zones=None, vortex_zones=None, array=None, max
                 # ax.add_artist(PolygonPatch(
                 #     vortex_zones[zone], fill=False, linestyle='dotted', color='white'))
                 ax.add_artist(PolygonPatch(
-                    vortex_zones[zone],  facecolor='#ff9900', alpha=.2))
+                    # vortex_zones[zone],  facecolor='#ff6600', alpha=.5))
+                    vortex_zones[zone],  hatch='\\', alpha=.5))
                 # if offset:
                 #     ax.text(vortex_zones[zone].centroid.x+50,
                 #             vortex_zones[zone].centroid.y+50, zone, color='white')
@@ -113,7 +113,7 @@ def main():
     # building_coordinates = builder.calculate_building_coordinates(
     #     building_width=building_width, building_length=building_length, building_height=building_height)
     building_coordinates, building_height = builder.calculate_building_coordinates(
-        preset='default')
+        preset='rect')
     building_length = building_coordinates[2][0]
     building_width = building_coordinates[2][1]
     building = builder.build_polygons(building_coordinates)
@@ -123,10 +123,10 @@ def main():
     #                             module_width=4, module_length=2, gap_length=0)
     # array = panels.build_arrays(zones=zones, Lb=building_height, module_width=4, module_length=2, gap_length=1, rows=4,
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
-    array = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building_length=building_length, building_height=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
+    array = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building_length=building_length, building_width=building_width, building_height=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
                                 columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
-    # graph_polygons(
-    #     building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
+    graph_polygons(
+        building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # for zone in intersections:
     #     for panel in intersections[zone]:
     #         print('panel:', panel, 'zone:', zone, 'area:', str(
