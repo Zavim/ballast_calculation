@@ -26,18 +26,21 @@ class Panel:
         self.forceS = forceS
 
 
-def build_arrays(zones=None, vortex_zones=None, building_length=0, building_width=0, building_height=0, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, max_x=0, max_y=0):
+def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0):
     array = []
     panel_list = []
     panel_tree = []
     panel_count = []
     parameter_dict = {}
-    W = max(building_length, building_width)
-    z = building_height
+
+    W = max(building.length, building.width)
+    z = building.height
     Lb = min(z, 0.4 * (W * z) ** 1/2)
+    max_x = building.length
+    max_y = building.width
     append_parameter_dict('W', W, parameter_dict)
-    append_parameter_dict('w', building_width, parameter_dict)
-    append_parameter_dict('l', building_length, parameter_dict)
+    append_parameter_dict('w', building.width, parameter_dict)
+    append_parameter_dict('l', building.length, parameter_dict)
     append_parameter_dict('z', z, parameter_dict)
     append_parameter_dict('Lb', Lb, parameter_dict)
 
@@ -73,8 +76,8 @@ def build_arrays(zones=None, vortex_zones=None, building_length=0, building_widt
     calculate_vortex_zones(array, vortex_zones)
     calculate_edge_factors(array)
     calculate_lift_and_friction(array, Lb)
-    calculate_forces(array=array, building_length=building_length,
-                     building_width=building_width, building_height=building_height, Lb=Lb, parameter_dict=parameter_dict)
+    calculate_forces(array=array, building=building,
+                     Lb=Lb, parameter_dict=parameter_dict)
     generateReport(report=True, array=array, parameter_dict=parameter_dict)
 
     # --debugging--
@@ -409,9 +412,9 @@ def vortex_picker(panel, lift_graph):
                     panel.gamma_e = temp_gamma_e
 
 
-def calculate_forces(array=None, building_length=0, building_width=0, building_height=0, Lb=0, Aref=0, parameter_dict=None, elevation=2500, wind_speed=100):
+def calculate_forces(array=None, building=None, Lb=0, Aref=0, parameter_dict=None, elevation=2500, wind_speed=100):
     Aref = array[0].length * array[0].width
-    z = building_height
+    z = building.height
     Zg = 900
     alpha = 10
     Kzt = 1
@@ -429,7 +432,7 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
 
     # Lb = min(z, 0.4 * (w * z) ** 1/2)
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
-    # W = max(building_length, building_width)
+    # W = max(building.length, building_width)
     if (Ph / Lb >= .2):
         gammaP = 1.12
     else:
@@ -442,10 +445,10 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
         panel.forceS = qz*panel.gcs*panel.gamma_e*gammaP*Aref
 
     # parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
-    #                   'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'Lb': Lb, 'w': w, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building_length, 'W': W, 'h2': h2}
+    #                   'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'Lb': Lb, 'w': w, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building.length, 'W': W, 'h2': h2}
     append_parameter_dict('qz', qz, parameter_dict)
     append_parameter_dict('Kz', Kz, parameter_dict)
-    append_parameter_dict('building_height', building_height, parameter_dict)
+    append_parameter_dict('building_height', z, parameter_dict)
     append_parameter_dict('Zg', Zg, parameter_dict)
     append_parameter_dict('alpha', alpha, parameter_dict)
     append_parameter_dict('Kzt', Kzt, parameter_dict)
@@ -476,9 +479,6 @@ def calculate_forces(array=None, building_length=0, building_width=0, building_h
     # return parameter_dict
 
 
-def generateReport(report=False, parameter_dict=None, array=None, building_length=None,
-                   building_width=None, building_height=None):
-    # parameter_dict = calculate_forces(array=array, building_length=building_length,
-    #                                   building_width=building_width, building_height=building_height)
+def generateReport(report=False, parameter_dict=None, array=None):
     if report:
         output.write_to_csv(parameter_dict, array)
