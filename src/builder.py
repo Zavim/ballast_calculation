@@ -50,17 +50,17 @@ def calculate_building_coordinates(preset='', building_width=0, building_length=
 def calculate_vortex_zones(building):
     building_origin_x = building.coordinates[0][0]
     building_origin_y = building.coordinates[0][1]
-    building_max_x = building.coordinates[2][1]
-    building_max_y = building.coordinates[2][0]
+    building_max_x = building.coordinates[2][0]
+    building_max_y = building.coordinates[2][1]
 
     vortex_formulas_length = {
-        'VNE-E': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [building_max_x, building_max_y]},
+        'VNE-E': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [building_max_x, building_max_y], 4: [building_max_x-building_max_y, building_origin_y]},
         'VNE-N': {1: [(building_max_x-building_max_y), building_origin_y], 2: [building_max_x, building_max_y], 3: [building_max_x, building_origin_y]},
-        'VNW-W': {1: [building_origin_x, building_max_y], 2: [building_max_x, building_max_y], 3: [building_max_x, building_origin_y]},
+        'VNW-W': {1: [building_origin_x, building_max_y], 2: [building_max_x, building_max_y], 3: [building_max_x, building_origin_y], 4: [building_max_y, building_origin_y]},
         'VNW-N': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [building_max_y, building_origin_x]},
-        'VSW-W': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [(building_max_x-building_max_y), building_origin_y]},
-        'VSW-S': {1: [(building_max_x-building_max_y), building_origin_y], 2: [building_max_x, building_max_y], 3: [building_max_x, building_origin_y]},
-        'VSE-E': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [(building_max_x-building_max_y), building_max_y]},
+        'VSW-W': {1: [building_origin_x, building_origin_y], 2: [building_max_y, building_max_y], 3: [building_max_x, building_max_y], 4: [building_max_x, building_origin_y]},
+        'VSW-S': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [building_max_y, building_max_y]},
+        'VSE-E': {1: [building_origin_x, building_origin_y], 2: [building_origin_x, building_max_y], 3: [(building_max_x-building_max_y), building_max_y], 4: [building_max_x, building_origin_y]},
         'VSE-S': {1: [(building_max_x-building_max_y), building_max_y], 2: [building_max_x, building_max_y], 3: [building_max_x, building_origin_y]}
     }
 
@@ -82,7 +82,7 @@ def calculate_vortex_zones(building):
             vortex_zones[key] = build_polygons(vortex_zones[key])
         return vortex_zones
     else:
-        for key in vortex_formulas_length:
+        for key in vortex_formulas_width:
             vortex_zones[key] = list(iter(vortex_formulas_width[key].values()))
             vortex_zones[key] = build_polygons(vortex_zones[key])
         return vortex_zones

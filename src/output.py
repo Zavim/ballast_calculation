@@ -1,13 +1,8 @@
 import csv
 import datetime
-import yaml
 
 
 def write_to_csv(parameter_dict, array):
-    with open('report.yaml', 'w') as report:
-        yaml.dump(parameter_dict, report)
-        yaml.dump_all(array, report)
-
     print('if no input, project will be named myReport by default')
     report_name = input('input report name: ')
     if report_name == '':
@@ -58,20 +53,20 @@ def write_to_csv(parameter_dict, array):
     writer.writerow([''])
     writer.writerow(['panel length', 'panel width', 'Aref'])
     writer.writerow(
-        [array[0].length, array[0].width, array[0].length * array[0].width])
+        [array.panel_list[0].length, array.panel_list[0].width, array.panel_list[0].length * array.panel_list[0].width])
     # all panels will have the same length, width, and area so this line just
     # picks the first panel from the array to get these values
     writer.writerow([''])
     writer.writerow(['array rows', 'array columns', 'array total'])
     writer.writerow([''])
-    writer.writerow([array[-1].index[0]+1, array[-1].index[1]+1,
-                    (array[-1].index[0]+1) * (array[-1].index[1]+1)])
+    writer.writerow([array.panel_list[-1].index[0]+1, array.panel_list[-1].index[1]+1,
+                    (array.panel_list[-1].index[0]+1) * (array.panel_list[-1].index[1]+1)])
     writer.writerow([''])
     writer.writerow(['panel index', 'panel coords', 'panel class',
                     'zones', 'vortex zones', 'gammaE', 'qz*gammaP*gammaE', 'LSF', 'AtribL', 'AnL', 'GCL', 'forceL', 'AtribS', 'AnS', 'GCS', 'forceS', 'maxForce'])
 
     panel_parameters = {}
-    for panel in array:
+    for panel in array.panel_list:
         for zone in panel.zones:
             panel.zones[zone] = round(panel.zones[zone], 2)
         panel_parameters['panel index'] = panel.index

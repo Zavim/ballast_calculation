@@ -6,5 +6,5 @@ references/
 output/
 csv/
 *.csv
-report.yaml
+*.yaml
 overview.txt

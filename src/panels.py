@@ -5,6 +5,14 @@ import math
 import output
 
 
+class Array:
+    def __init__(self, panel_list, ns_gap, ew_gap):
+        self.panel_list = panel_list
+        self.array_total = len(panel_list)
+        self.ns_gap = ns_gap
+        self.ew_gap = ew_gap
+
+
 class Panel:
     def __init__(self,  index, width, length, polygon, panel_class=None, load_share_factor=None, AtribL=0, AtribS=0, AnL=0, AnS=0, zones={}, vortex_zones={}, gcl=0, gcs=0, gamma_e=1, forceL=0, forceS=0):
         self.index = index
@@ -28,7 +36,7 @@ class Panel:
 
 def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0):
     array = []
-    panel_list = []
+    panel_polygon_list = []
     panel_tree = []
     panel_count = []
     parameter_dict = {}
@@ -68,8 +76,8 @@ def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=N
                 array.append(panel)
 
     for panel in array:
-        panel_list.append(panel.polygon)
-    panel_tree = STRtree(panel_list)
+        panel_polygon_list.append(panel.polygon)
+    panel_tree = STRtree(panel_polygon_list)
     check_neighbors(
         array, panel_tree, module_width, module_length)
     calculate_panel_zones(array, zones)
@@ -78,12 +86,11 @@ def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=N
     calculate_lift_and_friction(array, Lb)
     calculate_forces(array=array, building=building,
                      Lb=Lb, parameter_dict=parameter_dict)
-    generateReport(report=True, array=array, parameter_dict=parameter_dict)
 
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
-    return array
+    return array, parameter_dict
 
 
 def append_parameter_dict(key=None, value=None, parameter_dict=None):
@@ -337,7 +344,6 @@ def calculate_edge_factors(array):
 
         else:
             panel.load_share_factor = load_share_factors['edge']
-            # panel.Atrib = Aref*load_share_factors['edge']
             panel.AtribL = Aref*load_share_factors['edge']
             panel.AtribS = Aref*array_total
 
@@ -477,8 +483,3 @@ def calculate_forces(array=None, building=None, Lb=0, Aref=0, parameter_dict=Non
     # parameter_dict['Ph'] = Ph
     # parameter_dict['h2'] = h2
     # return parameter_dict
-
-
-def generateReport(report=False, parameter_dict=None, array=None):
-    if report:
-        output.write_to_csv(parameter_dict, array)

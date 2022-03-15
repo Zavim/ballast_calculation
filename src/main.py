@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from descartes import PolygonPatch
 import panels
 import builder
+import output
 
 
 # big_building_filepath = 'csv/bigBuilding.csv'
@@ -84,27 +85,31 @@ def graph_polygons(building=None, zones=None, vortex_zones=None, array=None, max
                         zones[zone].centroid.y, zone)
                 # centroid represents the center of the polygon
         if array:
-            for panel in array:
+            for panel in array.panel_list:
                 ax.add_artist(PolygonPatch(
                     panel.polygon, facecolor='#000050', alpha=.75))
                 # ax.text(panel.polygon.centroid.x,
                 #         panel.polygon.centroid.y, panel.identity, color='white')
         if vortex_zones:
-            offset = False
+            alt = False
             for zone in vortex_zones:
-                # ax.add_artist(PolygonPatch(
-                #     vortex_zones[zone], fill=False, linestyle='dotted', color='white'))
-                ax.add_artist(PolygonPatch(
-                    # vortex_zones[zone],  facecolor='#ff6600', alpha=.5))
-                    vortex_zones[zone],  hatch='\\', alpha=.5))
-                # if offset:
-                #     ax.text(vortex_zones[zone].centroid.x+50,
-                #             vortex_zones[zone].centroid.y+50, zone, color='white')
+                if alt:
+                    ax.add_artist(PolygonPatch(
+                        vortex_zones[zone],  hatch='||', alpha=.2, fill=False, color='#000050'))
+                else:
+                    ax.add_artist(PolygonPatch(
+                        # vortex_zones[zone],  facecolor='#ff6600', alpha=.5))
+                        vortex_zones[zone],  hatch='--', alpha=.2, fill=False, color='#000050'))
                 ax.text(vortex_zones[zone].centroid.x,
                         vortex_zones[zone].centroid.y, zone, color='white')
-                # offset = not offset
+                alt = not alt
         plt.show()
     return ax
+
+
+def generateReport(report=False, array=None, parameter_dict=None):
+    if report:
+        output.write_to_csv(parameter_dict, array)
 
 
 def main():
@@ -113,27 +118,30 @@ def main():
     # building_coordinates = builder.calculate_building_coordinates(
     #     building_width=building_width, building_length=building_length, building_height=building_height)
     building_coordinates, building_height = builder.calculate_building_coordinates(
-        preset='alberta')
+        preset='rect')
     building_length = building_coordinates[2][0]
     building_width = building_coordinates[2][1]
     building = builder.Building(building_coordinates, building_length, building_width,
                                 building_height, builder.build_polygons(building_coordinates))
-    # building = builder.build_polygons(building_coordinates)
     zones = builder.calculate_zones(building)
     vortex_zones = builder.calculate_vortex_zones(building)
-    #                             module_width=4, module_length=2, gap_length=0)
     # array = panels.build_arrays(zones=zones, Lb=building_height, module_width=4, module_length=2, gap_length=1, rows=4,
     #                             columns=4, distance_left=10, distance_bottom=400, max_x=500, max_y=500)
     # array = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building_length=building_length, building_width=building_width, building_height=building_height, module_width=7, module_length=3, gap_length=0, rows=11,
     #                             columns=8, distance_left=440, distance_bottom=435, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1])
-    array = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building=building, module_width=7, module_length=3, gap_length=0, rows=11,
-                                columns=8, distance_left=440, distance_bottom=435)
+    # arrays_list = []
+    panel_list, parameter_dict = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building=building, module_width=7, module_length=3, gap_length=0, rows=11,
+                                                     columns=8, distance_left=440, distance_bottom=435)
+    array = panels.Array(panel_list=panel_list, ns_gap=0, ew_gap=0)
+    # arrays_list.append(array)
+    # panel_list, parameter_dict = panels.build_arrays(zones=zones, vortex_zones=vortex_zones, building=building, module_width=7, module_length=3, gap_length=0, rows=11,
+    #                                                  columns=8, distance_left=0, distance_bottom=435)
+    # array = panels.Array(panel_list=panel_list, ns_gap=0, ew_gap=0)
+    # arrays_list.append(array)
+
+    generateReport(report=True, array=array, parameter_dict=parameter_dict)
     graph_polygons(
-        building=building, zones=zones, vortex_zones=None, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
-    # for zone in intersections:
-    #     for panel in intersections[zone]:
-    #         print('panel:', panel, 'zone:', zone, 'area:', str(
-    #             intersections[zone][panel]) + ' sqft.')
+        building=building, zones=zones, vortex_zones=vortex_zones, array=array, max_x=building_coordinates[2][0], max_y=building_coordinates[2][1], show=True)
     # ---debugging---
     # array, north_ray, south_ray, east_ray, west_ray = Polygons.build_arrays(module_width=4, module_length=2, gap_length=1, rows=4,
     #                                                                         columns=4, distance_left=10, distance_bottom=400, max_x=max_x, max_y=max_y)
