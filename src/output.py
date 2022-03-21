@@ -2,7 +2,7 @@ import csv
 import datetime
 
 
-def write_to_csv(parameter_dict, array):
+def write_parameters(parameter_dict, array):
     print('if no input, project will be named myReport by default')
     report_name = input('input report name: ')
     if report_name == '':
@@ -52,20 +52,25 @@ def write_to_csv(parameter_dict, array):
         [parameter_dict['LSFc'], parameter_dict['LSFe'], parameter_dict['LSFi']])
     writer.writerow([''])
     writer.writerow(['panel length', 'panel width', 'Aref'])
+    writer.writerow([''])
     writer.writerow(
         [array.panel_list[0].length, array.panel_list[0].width, array.panel_list[0].length * array.panel_list[0].width])
     # all panels will have the same length, width, and area so this line just
     # picks the first panel from the array to get these values
     writer.writerow([''])
+    return report_name, file, writer
+
+
+def write_panels(report_name, file, writer, parameter_dict, array):
+    panel_parameters = {}
     writer.writerow(['array rows', 'array columns', 'array total'])
     writer.writerow([''])
-    writer.writerow([array.panel_list[-1].index[0]+1, array.panel_list[-1].index[1]+1,
-                    (array.panel_list[-1].index[0]+1) * (array.panel_list[-1].index[1]+1)])
+    writer.writerow([array.rows, array.columns, array.array_total])
     writer.writerow([''])
     writer.writerow(['panel index', 'panel coords', 'panel class',
                     'zones', 'vortex zones', 'gammaE', 'qz*gammaP*gammaE', 'LSF', 'AtribL', 'AnL', 'GCL', 'forceL', 'AtribS', 'AnS', 'GCS', 'forceS', 'maxForce'])
+    writer.writerow([''])
 
-    panel_parameters = {}
     for panel in array.panel_list:
         for zone in panel.zones:
             panel.zones[zone] = round(panel.zones[zone], 2)
@@ -74,5 +79,5 @@ def write_to_csv(parameter_dict, array):
             panel.polygon.exterior.coords[:-1])
         panel_parameters['panel class'] = panel.panel_class
         writer.writerow([panel.index, list(panel.polygon.exterior.coords[:-1]), panel.panel_class, panel.zones,
-                        panel.vortex_zones, panel.gamma_e, parameter_dict['qz'] * parameter_dict['gammaP']*panel.gamma_e, panel.load_share_factor, round(panel.AtribL, 2), round(panel.AnL, 2), round(panel.gcl, 2), round(panel.forceL), round(panel.AtribS, 2), round(panel.AnS, 2), round(panel.gcs, 2), round(panel.forceS), round(min(panel.forceS, panel.forceL))])
+                        panel.vortex_zones, panel.gamma_e, round(parameter_dict['qz'] * parameter_dict['gammaP']*panel.gamma_e, 1), panel.load_share_factor, round(panel.AtribL, 2), round(panel.AnL, 2), round(panel.gcl, 2), round(panel.forceL), round(panel.AtribS, 2), round(panel.AnS), round(panel.gcs, 2), round(panel.forceS), round(min(panel.forceS, panel.forceL))])
         # list(panel.zones.keys()), zones_after_rounding, panel.vortex_zones, round(panel.An, 2), round(panel.gcl, 2), round(panel.gcs, 2), round(panel.gamma_e, 2)])

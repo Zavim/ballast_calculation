@@ -6,9 +6,12 @@ import output
 
 
 class Array:
-    def __init__(self, panel_list, ns_gap, ew_gap):
+    def __init__(self, index, panel_list, ns_gap, ew_gap):
+        self.index = index
         self.panel_list = panel_list
         self.array_total = len(panel_list)
+        self.rows = panel_list[-1].index[0]+1
+        self.columns = panel_list[-1].index[1]+1
         self.ns_gap = ns_gap
         self.ew_gap = ew_gap
 
@@ -34,12 +37,14 @@ class Panel:
         self.forceS = forceS
 
 
-def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0):
+parameter_dict = {}
+
+
+def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=None, rows=0, columns=0, module_width=0, module_length=0, gap_length=0, distance_left=0, distance_bottom=0, report=False):
     array = []
     panel_polygon_list = []
     panel_tree = []
     panel_count = []
-    parameter_dict = {}
 
     W = max(building.length, building.width)
     z = building.height
@@ -86,15 +91,23 @@ def build_arrays(zones=None, vortex_zones=None, building=None, csv_coordinates=N
     calculate_lift_and_friction(array, Lb)
     calculate_forces(array=array, building=building,
                      Lb=Lb, parameter_dict=parameter_dict)
-
     # --debugging--
     # north_ray, south_ray, east_ray, west_ray = Polygons.check_neighbors(
     #     array, panel_tree, module_width, module_length)
-    return array, parameter_dict
+    return array
 
 
 def append_parameter_dict(key=None, value=None, parameter_dict=None):
     parameter_dict[key] = value
+
+
+def generateReport(report=False, arrays=None, parameter_dict=None):
+    if report:
+        report_name, file, writer = output.write_parameters(
+            parameter_dict, arrays[0])
+        for array in arrays:
+            output.write_panels(report_name=report_name, file=file, writer=writer, array=array,
+                                parameter_dict=parameter_dict)
 
 
 def check_neighbors(array, panel_tree, module_width, module_length):
@@ -438,20 +451,15 @@ def calculate_forces(array=None, building=None, Lb=0, Aref=0, parameter_dict=Non
 
     # Lb = min(z, 0.4 * (w * z) ** 1/2)
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
-    # W = max(building.length, building_width)
     if (Ph / Lb >= .2):
         gammaP = 1.12
     else:
         gammaP = .88+(1.2 * (Ph / Lb))
 
     for panel in array:
-        # print(qz, panel.gcl, panel.gamma_e, gammaP, Aref)
-        # panel.An = 1000*(panel.Atrib/Lb ** 2)
         panel.forceL = qz*panel.gcl*panel.gamma_e*gammaP*Aref
         panel.forceS = qz*panel.gcs*panel.gamma_e*gammaP*Aref
 
-    # parameter_dict = {'qz': qz, 'Kz': Kz, 'building_height': building_height, 'Zg': Zg, 'alpha': alpha, 'Kzt': Kzt,
-    #                   'Kd': Kd, 'Ke': Ke, 'elevation': elevation, 'v': v, 'Lb': Lb, 'w': w, 'gammaP': gammaP, 'Ph': Ph, 'z': building_height, 'l': building.length, 'W': W, 'h2': h2}
     append_parameter_dict('qz', qz, parameter_dict)
     append_parameter_dict('Kz', Kz, parameter_dict)
     append_parameter_dict('building_height', z, parameter_dict)
@@ -468,18 +476,3 @@ def calculate_forces(array=None, building=None, Lb=0, Aref=0, parameter_dict=Non
     append_parameter_dict('LSFc', 3, parameter_dict)
     append_parameter_dict('LSFe', 3, parameter_dict)
     append_parameter_dict('LSFi', 6, parameter_dict)
-
-    # parameter_dict['qz'] = qz
-    # parameter_dict['Kz'] = Kz
-    # parameter_dict['building_height'] = building_height
-    # parameter_dict['Zg'] = Zg
-    # parameter_dict['alpha'] = alpha
-    # parameter_dict['Kzt'] = Kzt
-    # parameter_dict['Kd'] = Kd
-    # parameter_dict['Ke'] = Ke
-    # parameter_dict['elevation'] = elevation
-    # parameter_dict['v'] = v
-    # parameter_dict['gammaP'] = gammaP
-    # parameter_dict['Ph'] = Ph
-    # parameter_dict['h2'] = h2
-    # return parameter_dict
