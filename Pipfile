@@ -4,14 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-shapely = "*"
+shapely = "1.7.1"
 matplotlib = "*"
-descartes = "*"
+descartes = "1.1.0"
 flask = "*"
 scipy = "*"
 
 [dev-packages]
-kivy = "*"
 yapf = "*"
 autopep8 = "*"
 pyyaml = "*"

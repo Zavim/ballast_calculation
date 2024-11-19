@@ -2,6 +2,7 @@ from scipy import interpolate
 from shapely.geometry import Polygon, LineString
 from shapely.strtree import STRtree
 import math
+import sys
 import output
 
 
@@ -103,10 +104,10 @@ def append_parameter_dict(key=None, value=None, parameter_dict=None):
 
 def generateReport(report=False, arrays=None, parameter_dict=None):
     if report:
-        report_name, file, writer = output.write_parameters(
+        project_name, file, writer = output.write_parameters(
             parameter_dict, arrays[0])
         for array in arrays:
-            output.write_panels(report_name=report_name, file=file, writer=writer, array=array,
+            output.write_panels(project_name=project_name, file=file, writer=writer, array=array,
                                 parameter_dict=parameter_dict)
 
 
@@ -444,10 +445,11 @@ def calculate_forces(array=None, building=None, Lb=0, Aref=0, parameter_dict=Non
     # 435,466 is bottom left of A1 array
     h2 = .8
     Ph = 4
-    if (z < Zg and z > 15):
+    if (z < Zg and z >= 15):
         Kz = 2.01 * (z/Zg) ** (2/alpha)
     else:
-        print('building height does not fit parameters')
+        sys.exit('building height must be between 15ft and 900ft')
+        
 
     # Lb = min(z, 0.4 * (w * z) ** 1/2)
     qz = .00256 * Kz * Kzt * Kd * Ke * v ** 2
